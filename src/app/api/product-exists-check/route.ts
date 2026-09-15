@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { encodeObfuscated, readObfuscatedQuery } from "@/lib/obfuscation";
 
-const API_KEY = process.env.CFS_API_KEY;
+const API_KEY = process.env.MFS_API_KEY;
 const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE || "https://admin.motorhomesforsale.com.au/wp-json/mfs/v1";
 
 // Body is obfuscated (see @/lib/obfuscation) so the raw JSON isn't readable

@@ -1,5 +1,5 @@
 const BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
-const API_KEY = process.env.CFS_API_KEY;
+const API_KEY = process.env.MFS_API_KEY;
 export type BlogDetail = {
   slug: string;
   title: string;

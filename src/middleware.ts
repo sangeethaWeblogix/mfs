@@ -2,7 +2,7 @@
  import { parseSlugToFilters, type Filters } from "@/app/components/urlBuilder";
  import { buildSlugFromFilters } from "@/app/components/slugBuilter";
  import { isAllowedSingleBand } from "@/utils/seo/band-utils";
- const API_KEY = process.env.CFS_API_KEY;
+ const API_KEY = process.env.MFS_API_KEY;
 
  const API_WP = 'https://admin.motorhomesforsale.com.au/wp-json/mfs/v1';
 

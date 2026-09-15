@@ -1,6 +1,6 @@
 import { cache } from "react";
 
-const API_KEY = process.env.CFS_API_KEY;
+const API_KEY = process.env.MFS_API_KEY;
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_ATTEMPTS = 3;
 

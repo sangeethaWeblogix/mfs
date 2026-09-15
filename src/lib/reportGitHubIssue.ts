@@ -37,7 +37,7 @@ function classifyError(errorType: string, errorSource: "FRONTEND" | "BACKEND"): 
     return {
       emoji: "🔑",
       category: "Missing / Invalid API Key",
-      diagnosis: "The request was rejected due to a missing or invalid API key (HTTP 401/403). Check that CFS_API_KEY is correctly set in Vercel environment variables.",
+      diagnosis: "The request was rejected due to a missing or invalid API key (HTTP 401/403). Check that MFS_API_KEY is correctly set in Vercel environment variables.",
       severity: "critical",
     };
   }
@@ -154,7 +154,7 @@ ${payload.message}
 
 ### Checklist
 - [ ] Verify backend API is reachable: \`https://admin.motorhomesforsale.com.au/wp-json/mfs/v1/new_optimize_code\`
-- [ ] Check \`CFS_API_KEY\` in Vercel environment variables
+- [ ] Check \`MFS_API_KEY\` in Vercel environment variables
 - [ ] Check Vercel function logs for this timeframe
 - [ ] Confirm API response time is under 30s
 

@@ -19,7 +19,7 @@ import { parseObfuscatedResponse } from "@/lib/obfuscation";
 const APP_URL         = process.env.NEXT_PUBLIC_APP_URL || "https://www.motorhomesforsale.com.au";
 // Direct WP API — used when seed > 0 to bypass Cloudflare's pool cache (which strips seed).
 const WP_API_BASE     = process.env.NEXT_PUBLIC_MFS_API_BASE;
-const WP_API_KEY      = process.env.CFS_API_KEY;
+const WP_API_KEY      = process.env.MFS_API_KEY;
 
 /** Build the /api/d1/ query string from the full FilterState. */
 function buildApiParams(filters: FilterState, seed: number, perPage = 24): URLSearchParams {

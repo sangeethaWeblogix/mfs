@@ -1,6 +1,6 @@
 // src/app/listings-sitemap.xml/route.ts
 import { NextResponse } from "next/server";
- const API_KEY = process.env.CFS_API_KEY; // ✅ Add at top of file
+ const API_KEY = process.env.MFS_API_KEY; // ✅ Add at top of file
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://www.motorhomesforsale.com.au";

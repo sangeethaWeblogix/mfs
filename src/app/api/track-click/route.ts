@@ -1,6 +1,6 @@
 import { encodeObfuscated, readObfuscatedBody } from "@/lib/obfuscation";
 
-const API_KEY = process.env.CFS_API_KEY; // ✅ Added
+const API_KEY = process.env.MFS_API_KEY; // ✅ Added
 
 function obf(data: unknown): Response {
   return new Response(encodeObfuscated(data), {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
-const API_KEY = process.env.CFS_API_KEY;
+const API_KEY = process.env.MFS_API_KEY;
 
 // Normalize each product so components always get image_format as string[]
 // home_featured returns `thumbnail` (imagestack R2 URL); also handle `image` fallback

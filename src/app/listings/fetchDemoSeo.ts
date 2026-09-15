@@ -3,7 +3,7 @@ import type { FilterState } from "./StateFilterBar";
 import type { SeoV2 } from "./StateListingGrid";
 
 const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
-const API_KEY = process.env.CFS_API_KEY;
+const API_KEY = process.env.MFS_API_KEY;
 
 /** Server-side counterpart to the shared pool's client fetch — same params,
  * so generateMetadata's title/description (and page source) match what the

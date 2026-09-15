@@ -1,4 +1,4 @@
-const API_KEY = process.env.CFS_API_KEY; // ✅ Added
+const API_KEY = process.env.MFS_API_KEY; // ✅ Added
 export async function POST(req: Request) {
   try {
     const body = await req.json();

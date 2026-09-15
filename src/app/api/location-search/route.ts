@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { encodeObfuscated, readObfuscatedQuery } from "@/lib/obfuscation";
 
 const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
-const API_KEY = process.env.CFS_API_KEY;
+const API_KEY = process.env.MFS_API_KEY;
 
 // Body is obfuscated (see @/lib/obfuscation) so the raw JSON isn't readable
 // straight off the DevTools Network "Preview"/"Response" tab.

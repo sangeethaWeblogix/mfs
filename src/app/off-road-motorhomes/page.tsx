@@ -12,7 +12,7 @@ import { fetchRequirements } from "@/api/postRquirements/api";
 import { fetchHomePage } from "@/api/home/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
-const API_KEY  = process.env.CFS_API_KEY;
+const API_KEY  = process.env.MFS_API_KEY;
 const APP_URL  = process.env.NEXT_PUBLIC_APP_URL || "https://www.motorhomesforsale.com.au";
 
 const wpHeaders = (): Record<string, string> => ({

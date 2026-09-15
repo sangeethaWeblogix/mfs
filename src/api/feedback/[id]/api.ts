@@ -1,7 +1,7 @@
 // src/app/api/cf7/[id]/route.ts
 import { NextResponse } from "next/server";
 const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
-const API_KEY = process.env.CFS_API_KEY; // ✅ Add this
+const API_KEY = process.env.MFS_API_KEY; // ✅ Add this
 
 export const fetchCaravanList = async () => {
   const res = await fetch(`${API_BASE}/get-caravans-by-type`, {

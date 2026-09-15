@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { encodeObfuscated, readObfuscatedBody } from "@/lib/obfuscation";
 
-const API_KEY = process.env.CFS_API_KEY; // ✅ Added
+const API_KEY = process.env.MFS_API_KEY; // ✅ Added
 
 function obf(data: unknown): NextResponse {
   return new NextResponse(encodeObfuscated(data), {

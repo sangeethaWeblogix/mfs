@@ -1,5 +1,5 @@
 const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
- const API_KEY = process.env.CFS_API_KEY; // ✅ Add this
+ const API_KEY = process.env.MFS_API_KEY; // ✅ Add this
 
 export const fetchLatestUsedCaravans = async () => {
   try {

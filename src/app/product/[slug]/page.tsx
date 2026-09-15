@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 // export async function generateStaticParams() {
 //   const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
-//   const API_KEY = process.env.CFS_API_KEY;
+//   const API_KEY = process.env.MFS_API_KEY;
 //   if (!API_BASE) return [];
 //
 //   const headers: Record<string, string> = {
@@ -99,7 +99,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 const fetchProductDetail = cache(async (slug: string) => {
   const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE!;
-  const API_KEY = process.env.CFS_API_KEY;
+  const API_KEY = process.env.MFS_API_KEY;
   try {
     const res = await fetch(
       `${API_BASE}/product-detail-new?slug=${encodeURIComponent(slug)}`,
@@ -122,7 +122,7 @@ const fetchProductDetail = cache(async (slug: string) => {
 
 
 async function fetchSimilarProducts(productId: string | number, seed: number) {
-  const API_KEY = process.env.CFS_API_KEY;
+  const API_KEY = process.env.MFS_API_KEY;
   try {
     const res = await fetch(
       `https://admin.motorhomesforsale.com.au/wp-json/mfs/v1/similar_products?product_id=${productId}&seed=${seed}`,

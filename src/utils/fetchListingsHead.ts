@@ -43,7 +43,7 @@ type ApiResponse = {
 
  const BASE_URL = "https://www.motorhomesforsale.com.au";
 const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
-const API_KEY = process.env.CFS_API_KEY;
+const API_KEY = process.env.MFS_API_KEY;
 
 /** Same backend endpoint as /api/d1/ (pool_test) — used here instead
  * of new_optimize_code because pool_test has proven far more reliable

@@ -6,13 +6,13 @@ export const metadata: Metadata = {
   robots: "noindex, nofollow",
 };
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 const DEMO_SLUG = "2025-retreat-caravans-daydream-29ft6-off-road";
 
 const fetchProduct = cache(async () => {
   const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE!;
-  const API_KEY  = process.env.CFS_API_KEY;
+  const API_KEY  = process.env.MFS_API_KEY;
   try {
     const res = await fetch(
       `${API_BASE}/product-detail-new?slug=${encodeURIComponent(DEMO_SLUG)}`,
@@ -34,7 +34,7 @@ const fetchProduct = cache(async () => {
 });
 
 async function fetchSimilarProducts(productId: string | number, seed: number) {
-  const API_KEY = process.env.CFS_API_KEY;
+  const API_KEY = process.env.MFS_API_KEY;
   try {
     const res = await fetch(
       `https://admin.motorhomesforsale.com.au/wp-json/mfs/v1/similar_products?product_id=${productId}&seed=${seed}`,
