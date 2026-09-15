@@ -1,0 +1,305 @@
+"use client";
+
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import dynamic from "next/dynamic";
+
+import { type HomeBlogPost } from "@/api/home/api";
+import { type BlogPost } from "@/api/blog/api";
+import { type TypeCounts } from "@/api/homeApi/typeCounts/api";
+import HomeFeatured from "./HomeFeatured";
+import HomeStateSection from "./HomeStateSection";
+import HomeTypeSection from "./HomeTypeSection";
+import HomeLocationSection from "./HomeLocationSection";
+import HomeBuyerGuide from "./HomeBuyerGuide";
+import HomeListingSlider from "./HomeListingSlider";
+import { useBanners } from "@/components/BannerHandler";
+import { useBannerTracking } from "@/hooks/useBannerTracking";
+import "./main.css?=27";
+
+const BlogSection = dynamic(() => import("../blogSection"), { ssr: false });
+const PostRequirement = dynamic(() => import("../postRequirement"), { ssr: false });
+
+interface Item {
+  label: string;
+  capacity: number;
+  slug: string;
+  permalink: string;
+  caravan_count: string;
+  starting_price: number;
+  display_text: string;
+  state: string;
+  short_label: string;
+  short_count: string;
+  region: string;
+}
+
+type FeaturedListing = {
+  id: number;
+  name: string;
+  slug: string;
+  condition: string;
+  location: string;
+  state?: string;
+  regular_price: string;
+  sale_price: string;
+  categories: string[];
+  image_format: string[];
+  seller_type?: string;
+  berths?: string | number;
+};
+
+interface Props {
+  stateBands: Item[];
+  requirements: any;
+  homeblog: HomeBlogPost[];
+  typeCounts?: TypeCounts;
+  featured: { all: FeaturedListing[]; new: FeaturedListing[]; used: FeaturedListing[] };
+  blogPosts: BlogPost[];
+}
+/* --------------------------------- Page ---------------------------------- */
+export default function HomePage({
+
+  stateBands,
+  requirements,
+    homeblog,
+  typeCounts,
+  featured,
+  blogPosts,
+
+ }: Props) {
+
+  const [adIndex, setAdIndex] = useState<number>(0);
+
+  const { matchedBanners, isMobile, isLoading: bannerLoading } = useBanners();
+  const sortedHome = [...matchedBanners]
+    .filter(b => b.placement === "home")
+    .sort((a, b) => Number(b.id) - Number(a.id));
+  const homeDkBanner = sortedHome.find(b => b.device_target === "desktop");
+  const homeMbBanner = sortedHome.find(b => b.device_target === "mobile");
+  const activeBanner = isMobile ? (homeMbBanner ?? homeDkBanner) : (homeDkBanner ?? homeMbBanner);
+  const activeBanners = useMemo(() => activeBanner ? [activeBanner] : [], [activeBanner]);
+
+  const bannerClickUrl = activeBanner?.target_url ?? "#";
+  const { bannerRefs, trackClick } = useBannerTracking(activeBanners);
+
+  const handleBannerClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!activeBanner) return;
+    e.preventDefault();
+
+    trackClick(Number(activeBanner.id));
+
+    window.open(bannerClickUrl, "_blank", "noopener,noreferrer");
+  }, [activeBanner, bannerClickUrl, trackClick]);
+
+  const bannerSectionRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const storedIndex = Number.parseInt(
+      localStorage.getItem("ad_index") || "0",
+      10,
+    );
+    setAdIndex(Number.isFinite(storedIndex) ? storedIndex : 0);
+
+    const container = bannerSectionRef.current;
+    if (container) {
+      const items = container.querySelectorAll<HTMLElement>(".items");
+      const safeIndex =
+        items.length > 0 ? Math.min(storedIndex, items.length - 1) : 0;
+
+      items.forEach((item, i) => {
+        item.style.display = i === safeIndex ? "block" : "none";
+      });
+
+      const modulo = items.length || 4;
+      const next = (safeIndex + 1) % modulo;
+      localStorage.setItem("ad_index", String(next));
+    }
+
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, []);
+
+  return (
+    <div style={{ overflowX: "hidden" }}>
+
+      {/* ── Hero Banner ── */}
+      <section className="hd-banner">
+        <div className="container">
+          <h1 className="hd-banner__title">
+            Motorhomes for Sale <span className="hd-banner__title--orange">Across Australia</span>
+          </h1>
+          <div className="hd-banner__divider">
+            <span className="hd-banner__divider-line" />
+            <img src="/images/aus_outline.svg" alt="" className="hd-banner__divider-icon" />
+            <span className="hd-banner__divider-line" />
+          </div>
+          <p className="hd-banner__subtitle">
+            Browse thousands of new and used motorhomes for sale across Australia from trusted dealers and private sellers. Compare prices, layouts, features and specifications to find the right motorhome for your next adventure.
+          </p>
+          <div className="hd-banner__trust">
+            <div className="hd-banner__trust-item">
+              <div className="hd-banner__trust-icon-wrap">
+                <img src="/images/category.svg" alt="" className="hd-banner__trust-icon" width={26} height={26} />
+              </div>
+              <div className="hd-banner__trust-text">
+                <strong>Thousands of Listings</strong>
+                <span>New &amp; used motorhomes across Australia</span>
+              </div>
+            </div>
+            <div className="hd-banner__trust-item">
+              <div className="hd-banner__trust-icon-wrap">
+                <img src="/images/australia.png" alt="" className="hd-banner__trust-icon" width={26} height={26} />
+              </div>
+              <div className="hd-banner__trust-text">
+                <strong>Australia Wide</strong>
+                <span>Find motorhomes from every state &amp; territory</span>
+              </div>
+            </div>
+            <div className="hd-banner__trust-item">
+              <div className="hd-banner__trust-icon-wrap">
+                <img src="/images/seller.svg" alt="" className="hd-banner__trust-icon" width={26} height={26} />
+              </div>
+              <div className="hd-banner__trust-text">
+                <strong>Dealers &amp; Private Sellers</strong>
+                <span>Buy with confidence from trusted sellers</span>
+              </div>
+            </div>
+          </div>
+          <a href="/listings/" className="hd-banner__cta">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            Browse Motorhomes for Sale
+          </a>
+          <div className="hd-banner__bottom">
+            <div className="hd-banner__bottom-item">
+              <img src="/images/icon1.png" alt="" className="hd-banner__bottom-icon" />
+              <div><strong>Trusted Marketplace</strong><span>Safe &amp; secure platform</span></div>
+            </div>
+            <div className="hd-banner__bottom-item">
+              <img src="/images/icon2.png" alt="" className="hd-banner__bottom-icon" />
+              <div><strong>Great Prices</strong><span>Compare &amp; save</span></div>
+            </div>
+            <div className="hd-banner__bottom-item">
+              <img src="/images/icon3.png" alt="" className="hd-banner__bottom-icon" />
+              <div><strong>Buy with Confidence</strong><span>Verified dealers &amp; sellers</span></div>
+            </div>
+            <div className="hd-banner__bottom-item">
+              <img src="/images/icon4.png" alt="" className="hd-banner__bottom-icon" />
+              <div><strong>Coast to Country</strong><span>Motorhomes Australia wide</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      
+
+      {/* ── Featured Caravans ── */}
+      <HomeFeatured items={featured.all} />
+
+      {/* ── Banner Ad ── */}
+      <div className="hd-banner-ad pb-4">
+        <div className="container">
+          {bannerLoading ? (
+            <div style={{ width: "100%", aspectRatio: "2000/517", background: "#f0f0f0", borderRadius: 8 }} />
+          ) : activeBanner ? (
+            <a
+              href={bannerClickUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hd-banner-ad__inner"
+              ref={(el) => { bannerRefs.current[0] = el; }}
+              data-banner-id={activeBanner.id}
+              onClick={handleBannerClick}
+            >
+              <span className="hd-banner-ad__label">Advertisement</span>
+              <picture>
+                {homeMbBanner && <source media="(max-width: 767px)" srcSet={homeMbBanner.image_url} />}
+                <img
+                  src={(homeDkBanner ?? homeMbBanner)?.image_url}
+                  alt={activeBanner.name}
+                  className="hd-banner-ad__img"
+                />
+              </picture>
+            </a>
+          ) : (
+            <a href="/listings/" target="_blank" rel="noopener noreferrer" className="hd-banner-ad__inner">
+              <span className="hd-banner-ad__label">Advertisement</span>
+              <picture>
+                <source media="(max-width: 767px)" srcSet="/images/1157x598-mfs.jpg" />
+                <img src="/images/2000x517-mfs.jpg" alt="Motohomes For Sale" className="hd-banner-ad__img" />
+              </picture>
+            </a>
+          )}
+        </div>
+      </div>
+
+      {/* ── New Caravans for Sale ── */}
+      <HomeListingSlider
+        title="New Motorhomes for Sale"
+        viewAllHref="/listings/new-condition/"
+        items={featured.new}
+        badgeVariant="new"
+      />
+
+      {/* ── Sell CTA Banner ── */}
+      <section className="caravans_by_state related-products services ">
+        <div className="container">
+          <div className="sell-banner">
+            <div className="sell-content">
+              <h3>List Your Motorhome For Sale Today</h3>
+              <p className="subtitle">Reach thousands of motorhome buyers daily.</p>
+              <p className="desc">List your motorhome on MotorhomesForSale.com.au — Australia&apos;s trusted marketplace to buy and sell motorhomes.</p>
+              <div className="btns_two">
+                <a href="/dealer-advertising/" className="btn primary-btn">Dealer Sign Up</a>
+                <a href="/sell-my-motorhome/" className="btn secondary-btn">Private Seller - Click Here</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Used Caravans for Sale ── */}
+      <HomeListingSlider
+        title="Used Motorhomes for Sale"
+        viewAllHref="/listings/used-condition/"
+        items={featured.used}
+        badgeVariant="used"
+      />
+
+      {/* ── Browse by State ── */}
+      <HomeStateSection stateBands={stateBands} />
+
+      {/* ── Post Requirements ── */}
+      <div className="hd-postreq-wrap">
+        <div className="container">
+          <PostRequirement requirements={requirements} />
+        </div>
+      </div>
+
+      {/* ── Browse by Type — Hidden for now ──
+      <HomeTypeSection typeCounts={typeCounts} />
+      */}
+
+      {/* ── Find by Location ── */}
+      <HomeLocationSection />
+
+      {/* ── Buyer Guide + Why Australians ── */}
+      <HomeBuyerGuide />
+
+      {/* Deal of the Month Section */}
+      {/*}<section className="deal-of-month product-details section-padding">
+            <FeaturedSection />
+          </section> */}
+      {/*<section className="post-requirements product-details section-padding">
+          <PostRequirement />
+        </section> */}
+
+
+      {/* Latest Blog Section — Hidden for now
+      <BlogSection posts={blogPosts} />
+      */}
+    </div>
+  );
+}

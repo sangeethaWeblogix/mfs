@@ -1,0 +1,31 @@
+ import { Metadata } from "next";
+import { ReactNode } from "react";
+
+
+
+ export const metadata: Metadata = {
+   title: {
+     default: "Privacy Policy – Marketplace Network",
+     template: "%s ",
+   },
+   description:
+     "Read the Privacy Policy for websites operated by Marketplace Network Pty Ltd (ABN 70 694 987 052), including how we collect, use, and protect your personal information.",
+   icons: { icon: "/favicon.ico" },
+   robots: "index",
+   alternates: {
+    canonical: "https://www.motorhomesforsale.com.au/privacy-policy/",
+
+   },
+   
+   openGraph: {
+      url: "https://www.motorhomesforsale.com.au/privacy-policy/",
+     title: "Privacy Policy - caravansforsale.com.au - Motorhome Marketplace",
+       description:
+     "Learn about Motorhome Marketplace's privacy policy on data collection, usage, security measures, and your rights regarding your information.",
+     
+   },
+ };
+ 
+   export default function Layout({ children }: { children: ReactNode }) {
+    return <div>{children}</div>;
+  }
