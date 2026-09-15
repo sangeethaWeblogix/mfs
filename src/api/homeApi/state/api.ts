@@ -10,7 +10,7 @@ export const fetchStateBasedCaravans = async () => {
       next: { revalidate: 60 },
       headers: {
         Accept: "application/json",
-        ...(API_KEY && { "X-API-Key": API_KEY }),
+        ...(API_KEY && { "X-Secret-Key": API_KEY }),
       },
     });
     if (!res.ok) return [];

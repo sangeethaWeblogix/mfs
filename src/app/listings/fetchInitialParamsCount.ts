@@ -16,7 +16,7 @@ export async function fetchInitialParamsCount(): Promise<InitialParamsCount | nu
     const res = await fetch(`${API_BASE}/params_count?group_by=make,condition,state`, {
       headers: {
         Accept: "application/json",
-        ...(API_KEY && { "X-API-Key": API_KEY }),
+        ...(API_KEY && { "X-Secret-Key": API_KEY }),
       },
       cache: "no-store",
     });

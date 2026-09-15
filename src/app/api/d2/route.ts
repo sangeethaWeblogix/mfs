@@ -20,7 +20,7 @@ async function fetchFromWP(searchParams: URLSearchParams): Promise<NextResponse>
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        ...(API_KEY && { "X-API-Key": API_KEY }),
+        ...(API_KEY && { "X-Secret-Key": API_KEY }),
       },
     });
     if (!response.ok) {

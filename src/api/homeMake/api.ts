@@ -42,7 +42,7 @@ const res = await fetch(url, {
   cache: "no-store",
   headers: {
     Accept: "application/json",
-    ...(API_KEY && { "X-API-Key": API_KEY }), // ✅ Missing — add this
+    ...(API_KEY && { "X-Secret-Key": API_KEY }), // ✅ Missing — add this
   },
 });
     if (!res.ok)

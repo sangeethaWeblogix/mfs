@@ -385,7 +385,7 @@
        const apiRes = await fetch(apiUrl, {
          headers: {
            "User-Agent": "next-middleware",
-           ...(API_KEY && { "X-API-Key": API_KEY }),
+           ...(API_KEY && { "X-Secret-Key": API_KEY }),
          },
          signal: controller.signal,
          cache: "no-store",

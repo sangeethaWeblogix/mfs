@@ -32,7 +32,7 @@ export async function fetchRequirements(): Promise<Requirement[]> {
       cache: "no-store",
       headers: {
         Accept: "application/json",
-        ...(API_KEY && { "X-API-Key": API_KEY }),
+        ...(API_KEY && { "X-Secret-Key": API_KEY }),
       },
     });
     if (!res.ok) return [];
@@ -55,7 +55,7 @@ export async function createRequirement(
     method: "POST",
 headers: {
         Accept: "application/json",
-        ...(API_KEY && { "X-API-Key": API_KEY }), // ✅ Added
+        ...(API_KEY && { "X-Secret-Key": API_KEY }), // ✅ Added
       },    // normalize optional booleans to "0"/"1" strings if needed
     body: JSON.stringify({
       ...payload,

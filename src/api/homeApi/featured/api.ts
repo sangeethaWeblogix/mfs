@@ -46,7 +46,7 @@ async function fetchFeaturedType(type: string, seed: number, visitorIp: string):
       cache: "no-store",
       headers: {
         Accept: "application/json",
-        ...(API_KEY && { "X-API-Key": API_KEY }),
+        ...(API_KEY && { "X-Secret-Key": API_KEY }),
         ...(visitorIp && { "X-Visitor-IP": visitorIp }),
       },
     });

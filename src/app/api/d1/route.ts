@@ -19,7 +19,7 @@ async function fetchPoolTest(url: string, signal: AbortSignal) {
     signal,
     headers: {
       Accept: "application/json",
-      ...(API_KEY && { "X-API-Key": API_KEY }),
+      ...(API_KEY && { "X-Secret-Key": API_KEY }),
     },
     cache: "no-store",
   });
