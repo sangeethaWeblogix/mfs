@@ -27,6 +27,7 @@ export interface FilterState {
   category?: string;
   make?: string;
   model?: string;
+  engine_make?: string;
   state?: string;
   region?: string;
   suburb?: string;
@@ -178,6 +179,9 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
   const [makeSubView,   setMakeSubView]   = useState<"makes" | "models">("makes");
   const [makeCounts,       setMakeCounts]       = useState<{name: string; slug: string; count: number; model?: {name: string; slug: string; count: number}[]}[]>(initialParamsCount?.make ?? []);
   const [modelCounts,      setModelCounts]      = useState<{name: string; slug: string; count: number}[]>([]);
+
+  /* ── Engine Make (UI scaffolding — no data source wired up yet) ── */
+  const [tempEngineMake, setTempEngineMake] = useState<string | null>(null);
   const [stateCounts,      setStateCounts]      = useState<{name?: string; slug: string; count: number; region?: {name: string; slug: string; count: number}[]}[]>([]);
   const [regionCountsByState, setRegionCountsByState] = useState<Record<string, {name: string; slug: string; count: number}[]>>(() => paramsCountToRegionMap(initialParamsCount));
   const [lastModelName,    setLastModelName]    = useState<string | null>(null);
@@ -330,7 +334,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
   }, [currentFilters.make, currentFilters.category, currentFilters.condition]);
 
   const [openModal, setOpenModal] = useState<
-    "type"|"location"|"price"|"gvm"|"make"|"condition"|"sleep"|"allFilters"|null
+    "type"|"location"|"price"|"gvm"|"make"|"engineMake"|"condition"|"sleep"|"allFilters"|null
   >(null);
 
   /* ── Keyword search suggestions — same /api/home-search/ endpoint the
@@ -515,6 +519,11 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
     setMakeSubView("models");
   };
 
+  /* ── Engine Make (UI scaffolding — no data source wired up yet) ── */
+  const handleEngineMakeOpen   = () => { setTempEngineMake(currentFilters.engine_make ?? null); setOpenModal("engineMake"); };
+  const handleEngineMakeSearch = () => { updateFiltersAndURL({ engine_make: tempEngineMake ?? undefined }); setOpenModal(null); };
+  const handleEngineMakeClear  = () => { setTempEngineMake(null); updateFiltersAndURL({ engine_make: undefined }); setOpenModal(null); };
+
   /* ── Location ── */
   const handleLocationOpen = () => {
     const f = currentFilters;
@@ -562,6 +571,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
     setTempMake(currentFilters.make ?? null);
     setTempModel(currentFilters.model ?? null);
     setMakeSearch("");
+    setTempEngineMake(currentFilters.engine_make ?? null);
     setTempYearFrom(currentFilters.acustom_fromyears ? Number(currentFilters.acustom_fromyears) : null);
     setTempYearTo(currentFilters.acustom_toyears ? Number(currentFilters.acustom_toyears) : null);
     setTempLengthFrom(currentFilters.from_length ? Number(currentFilters.from_length) : null);
@@ -611,6 +621,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
       to_sleep:          tempSleepTo ?? undefined,
       make:              tempMake ?? undefined,
       model:             tempModel ?? undefined,
+      engine_make:       tempEngineMake ?? undefined,
       state:             (stateOverride ?? tempState)?.toLowerCase() ?? undefined,
       region:            (regionOverride ?? tempRegion)?.toLowerCase() ?? undefined,
       suburb:            suburbName ?? undefined,
@@ -685,6 +696,11 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
                     {currentFilters.make && <span className="active_filter"><i className="bi bi-circle-fill" /></span>}
                   </button>
 
+                  <button className={`tag${currentFilters.engine_make ? " active" : ""}`} onClick={handleEngineMakeOpen}>
+                    Engine Make
+                    {currentFilters.engine_make && <span className="active_filter"><i className="bi bi-circle-fill" /></span>}
+                  </button>
+
                   <button className={`tag${(currentFilters.from_price || currentFilters.to_price) ? " active" : ""}`} onClick={handlePriceOpen}>
                     Price
                     {(currentFilters.from_price || currentFilters.to_price) && <span className="active_filter"><i className="bi bi-circle-fill" /></span>}
@@ -708,7 +724,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
 
       {/* ── Active chips row ── */}
       {(currentFilters.state || currentFilters.region || currentFilters.suburb ||
-        currentFilters.make || currentFilters.model || currentFilters.from_price || currentFilters.to_price ||
+        currentFilters.make || currentFilters.model || currentFilters.engine_make || currentFilters.from_price || currentFilters.to_price ||
         currentFilters.minKg || currentFilters.maxKg || currentFilters.condition ||
         currentFilters.from_sleep || currentFilters.to_sleep) && (
         <div className="container">
@@ -735,6 +751,12 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
                   )}
                 </span>
                 <span className="chip-close" onClick={() => removeChip("model", { model: undefined })}>×</span>
+              </span>
+            )}
+            {currentFilters.engine_make && (
+              <span className={`active-chip${removingChip === "engine_make" ? " chip-removing" : ""}`}>
+                <span className="chip-label" onClick={handleEngineMakeOpen}>{toTitleCase(currentFilters.engine_make.replace(/-/g, " "))}</span>
+                <span className="chip-close" onClick={() => removeChip("engine_make", { engine_make: undefined })}>×</span>
               </span>
             )}
             {currentFilters.condition && (
@@ -978,6 +1000,21 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
                       {modelCounts.map(mod => (
                         <option key={mod.slug} value={mod.slug}>{mod.name}</option>
                       ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Engine Make — UI scaffolding only; no backend data source
+               * exists yet for engine_make. Once the API exposes an
+               * engine_make grouping, replace this with a populated
+               * select like the Make one above. */}
+              <div className="filter-item">
+                <h4>Engine Make</h4>
+                <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
+                  <div style={{ flex:1, minWidth:130 }}>
+                    <select className="cfs-select-input form-select" value={tempEngineMake ?? ""} disabled>
+                      <option value="">Coming soon</option>
                     </select>
                   </div>
                 </div>
@@ -1439,6 +1476,28 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
             <div className="filter-footer">
               <button className="clear" onClick={handleMakeClear} style={{ opacity:tempMake?1:0.4, cursor:tempMake?"pointer":"not-allowed" }}>Clear filters</button>
               <button className={`search${tempMake?" active":""}`} onClick={handleMakeSearch}>Search</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Engine Make Modal — UI scaffolding only; no backend data source
+       * exists yet for engine_make, so this has no options list. Once the
+       * API exposes an engine_make grouping, wire it up the same way Make
+       * is wired (see makeCounts / filteredMakes above). ── */}
+      {openModal === "engineMake" && (
+        <div className="filter-overlay">
+          <div className="filter-modal">
+            <div className="filter-header">
+              <h3>Engine Make</h3>
+              {closeBtn}
+            </div>
+            <div className="filter-body">
+              <p style={{ color:"#888", padding:"24px 4px" }}>Engine make filtering is coming soon.</p>
+            </div>
+            <div className="filter-footer">
+              <button className="clear" onClick={handleEngineMakeClear} style={{ opacity:tempEngineMake?1:0.4, cursor:tempEngineMake?"pointer":"not-allowed" }}>Clear filters</button>
+              <button className={`search${tempEngineMake?" active":""}`} onClick={handleEngineMakeSearch}>Search</button>
             </div>
           </div>
         </div>
