@@ -10,7 +10,7 @@
  * contains real product listings from the first byte.
  */
 
-import { Listing, SeoV2, buildFeaturedOrder } from "./listingShared";
+import { Listing, SeoV2, buildFeaturedOrder, normalizeListing } from "./listingShared";
 import type { InitialPool } from "./home";
 import type { FilterState } from "./StateFilterBar";
 import { seededShuffle } from "./seededShuffle";
@@ -58,11 +58,11 @@ function buildApiParams(filters: FilterState, seed: number, perPage = 24): URLSe
  */
 function parsePoolJson(json: any, isIndexed: boolean, displaySeed: number): InitialPool | null {
   const seo: SeoV2 | null = json?.seo_v2 ?? null;
-  const featuredRaw: Listing[]   = json?.featured_products  ?? [];
-  const newRaw: Listing[]        = json?.new_products       ?? [];
-  const usedRaw: Listing[]       = json?.used_products       ?? [];
-  const premiumsRaw: Listing[]   = json?.premium_products   ?? [];
-  const exclusivesRaw: Listing[] = json?.exclusive_products ?? [];
+  const featuredRaw: Listing[]   = (json?.featured_products  ?? []).map(normalizeListing);
+  const newRaw: Listing[]        = (json?.new_products       ?? []).map(normalizeListing);
+  const usedRaw: Listing[]       = (json?.used_products       ?? []).map(normalizeListing);
+  const premiumsRaw: Listing[]   = (json?.premium_products   ?? []).map(normalizeListing);
+  const exclusivesRaw: Listing[] = (json?.exclusive_products ?? []).map(normalizeListing);
 
   if (!featuredRaw.length && !newRaw.length && !usedRaw.length && !premiumsRaw.length) return null;
 
