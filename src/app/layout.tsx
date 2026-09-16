@@ -331,7 +331,7 @@ import fetchListingsForHead, { buildListingsJsonLd, buildBreadcrumbs } from "@/u
           showSpinner={false}
         /> */}
           <GlobalErrorTracker />
-          <BannerProvider initialBanners={initialBanners}>
+          <BannerProvider initialBanners={initialBanners as any}>
           {children}
           </BannerProvider>
                     </main>
