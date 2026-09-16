@@ -18,7 +18,9 @@ export default async function HomeDemoPage() {
     stateBands,
     requirements,
     homeblog,
-    featured,
+    featuredAll,
+    featuredNew,
+    featuredUsed,
     blog,
   ] = await Promise.all([
 
@@ -26,8 +28,12 @@ export default async function HomeDemoPage() {
     fetchRequirements(),
     fetchHomePage(),
     fetchHomeFeatured({ type: "all", seed }),
+    fetchHomeFeatured({ type: "new", seed }),
+    fetchHomeFeatured({ type: "used", seed }),
     fetchBlogs(1),
   ]);
+
+  const featured = { all: featuredAll, new: featuredNew, used: featuredUsed };
 
   return (
     <Home
