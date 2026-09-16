@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useEnquiryForm } from "@/app/components/ListContent/enquiryform";
 import { encodeObfuscated } from "@/lib/obfuscation";
-import { Listing, SeoV2, buildFeaturedOrder } from "./listingShared";
+import { Listing, SeoV2, buildFeaturedOrder, normalizeListing } from "./listingShared";
 
 export type { Listing, SeoV2 };
 export { buildFeaturedOrder };
@@ -460,11 +460,11 @@ export default function StateListingGrid({ title, viewAllHref, apiUrl, items: ex
       .then((json) => {
         // The pool endpoint segments products into featured/new/used buckets
         // plus separate premium/exclusive lists — combine them for this grid.
-        const featuredRaw: Listing[]   = json?.featured_products  ?? [];
-        const newRaw: Listing[]        = json?.new_products       ?? [];
-        const usedRaw: Listing[]       = json?.used_products      ?? [];
-        const premiumsRaw: Listing[]   = json?.premium_products   ?? [];
-        const exclusivesRaw: Listing[] = json?.exclusive_products ?? [];
+        const featuredRaw: Listing[]   = (json?.featured_products  ?? []).map(normalizeListing);
+        const newRaw: Listing[]        = (json?.new_products       ?? []).map(normalizeListing);
+        const usedRaw: Listing[]       = (json?.used_products      ?? []).map(normalizeListing);
+        const premiumsRaw: Listing[]   = (json?.premium_products   ?? []).map(normalizeListing);
+        const exclusivesRaw: Listing[] = (json?.exclusive_products ?? []).map(normalizeListing);
         const products = [...featuredRaw, ...newRaw, ...usedRaw];
 
         // Featured (and combined) grid: slots 1 & 2 are regular featured vans,

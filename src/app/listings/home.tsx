@@ -7,6 +7,7 @@ import Link from "next/link";
 import StateHero from "./StateHero";
 import StateFilterBar, { FilterState } from "./StateFilterBar";
 import StateListingGrid, { SeoV2, Listing, buildFeaturedOrder } from "./StateListingGrid";
+import { normalizeListing } from "./listingShared";
 import StateBrowseSection from "./StateBrowseSection";
 import type { BrowseSectionData } from "./browseSectionShared";
 import StateContent from "./StateContent";
@@ -378,11 +379,11 @@ export default function StateHome({
       const seoData = (json as any)?.seo_v2;
       if (seoData) setSeo(seoData);
 
-      const featuredRaw: Listing[]   = (json as any)?.featured_products  ?? [];
-      const newRaw: Listing[]        = (json as any)?.new_products       ?? [];
-      const usedRaw: Listing[]       = (json as any)?.used_products      ?? [];
-      const premiumsRaw: Listing[]   = (json as any)?.premium_products   ?? [];
-      const exclusivesRaw: Listing[] = (json as any)?.exclusive_products ?? [];
+      const featuredRaw: Listing[]   = ((json as any)?.featured_products  ?? []).map(normalizeListing);
+      const newRaw: Listing[]        = ((json as any)?.new_products       ?? []).map(normalizeListing);
+      const usedRaw: Listing[]       = ((json as any)?.used_products      ?? []).map(normalizeListing);
+      const premiumsRaw: Listing[]   = ((json as any)?.premium_products   ?? []).map(normalizeListing);
+      const exclusivesRaw: Listing[] = ((json as any)?.exclusive_products ?? []).map(normalizeListing);
 
       if (isIndexed) {
         const featuredItems = buildFeaturedOrder(featuredRaw, premiumsRaw, exclusivesRaw);
@@ -466,11 +467,11 @@ export default function StateHome({
         const seoData = json?.seo_v2;
         if (seoData) setSeo(seoData);
 
-        const featuredRaw: Listing[]   = json?.featured_products  ?? [];
-        const newRaw: Listing[]        = json?.new_products       ?? [];
-        const usedRaw: Listing[]       = json?.used_products      ?? [];
-        const premiumsRaw: Listing[]   = json?.premium_products   ?? [];
-        const exclusivesRaw: Listing[] = json?.exclusive_products ?? [];
+        const featuredRaw: Listing[]   = (json?.featured_products  ?? []).map(normalizeListing);
+        const newRaw: Listing[]        = (json?.new_products       ?? []).map(normalizeListing);
+        const usedRaw: Listing[]       = (json?.used_products      ?? []).map(normalizeListing);
+        const premiumsRaw: Listing[]   = (json?.premium_products   ?? []).map(normalizeListing);
+        const exclusivesRaw: Listing[] = (json?.exclusive_products ?? []).map(normalizeListing);
 
         if (isIndexed) {
           // Indexed pages show Featured/New/Used as separate grids — the pool

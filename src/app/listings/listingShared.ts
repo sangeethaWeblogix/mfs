@@ -23,6 +23,25 @@ export type Listing = {
   slot_bucket?: string;
 };
 
+/** The /pool endpoint (WordPress) returns raw product fields under different
+ * names than the Listing type the grid renders (title vs name, r2_thumbnails
+ * vs image_format, category vs categories, gvm vs kg) — mirrors the mapping
+ * already applied to /home-featured's response in fetchHomeFeatured's
+ * normalizeProduct. Without this, cards silently render a blank title/image. */
+export function normalizeListing(raw: any): Listing {
+  return {
+    ...raw,
+    name: raw.name ?? raw.title ?? "",
+    image_format: Array.isArray(raw.image_format)
+      ? raw.image_format
+      : Array.isArray(raw.r2_thumbnails)
+        ? raw.r2_thumbnails
+        : undefined,
+    categories: raw.categories ?? (Array.isArray(raw.category) ? raw.category : raw.category ? [raw.category] : []),
+    kg: raw.kg ?? (raw.gvm != null ? String(raw.gvm) : undefined),
+  };
+}
+
 export type SeoV2 = {
   h1?: string;
   meta_title?: string;
