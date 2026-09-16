@@ -340,7 +340,7 @@ export default function ProductDetailDemo({ data, similarData }: Props) {
 
   const detailRows: DetailRow[] = [
     makeRow("Make",             "Make"),
-    makeRow("Engine Make",      "Engine Make"),
+    makeRow(" Vehicle Make",      " Vehicle Make"),
     makeRow("Model",            "Model"),
     makeRow("Years",            "Years"),
     makeRow("Conditions",       "Conditions"),

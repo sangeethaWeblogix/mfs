@@ -97,6 +97,72 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
+function titleCase(s: string): string {
+  return s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function attr(label: string, value: unknown): { label: string; value: string } | null {
+  if (value === null || value === undefined || value === "") return null;
+  return { label, value: String(value) };
+}
+
+/**
+ * The WP API's product endpoint now returns a flat object (title, make: {name,
+ * slug}, numeric regular_price/sale_price, etc.) instead of the nested
+ * { data: { product_details: { attribute_urls: [...] } } } shape ProductDetailDemo
+ * was built against — without this adapter every product page gets stuck on
+ * "Loading product…" because product.name is never populated.
+ */
+function normalizeProductDetail(raw: any) {
+  if (raw?.data?.product_details) return raw;
+  if (!raw?.title && !raw?.slug) return raw;
+
+  const attribute_urls = [
+    attr("Make", raw.make?.name),
+    attr(" Vehicle Make", raw.engine_make),
+    attr("Model", raw.model?.name),
+    attr("Years", raw.year),
+    attr("Conditions", raw.condition),
+    attr("RV Class", raw.category?.[0]),
+    attr("Length", raw.length != null ? `${raw.length} ft` : null),
+    attr("Width", raw.width),
+    attr("Height", raw.height),
+    attr("ATM", raw.gvm != null ? `${raw.gvm} kg` : null),
+    attr("Tare Mass", raw.tare_mass != null ? `${raw.tare_mass} kg` : null),
+    attr("Payload Weight", raw.payload_weight != null ? `${raw.payload_weight} kg` : null),
+    attr("GCM", raw.gcm != null ? `${raw.gcm} kg` : null),
+    attr("Engine Capacity", raw.engine_capacity),
+    attr("Fuel Type", raw.fuel_type),
+    attr("Transmission", raw.transmission),
+    attr("Odometer", raw.odometer),
+    attr("sleeps", raw.sleep),
+    attr("Seats", raw.seats),
+    attr("Location", raw.state ? titleCase(raw.state) : null),
+  ].filter(Boolean);
+
+  const product_details = {
+    id: raw.id,
+    slug: raw.slug,
+    name: raw.title,
+    description: raw.description,
+    image_url: raw.images_full?.length ? raw.images_full : raw.r2_thumbnails,
+    regular_price: raw.regular_price,
+    sale_price: raw.sale_price,
+    make: raw.make?.name,
+    condition: raw.condition,
+    categories: raw.category ?? [],
+    attribute_urls,
+    sku: raw.sku,
+    seller_type: raw.seller_type,
+    region: raw.region ? { value: titleCase(raw.region), slug: raw.region } : undefined,
+  };
+
+  return {
+    data: { id: raw.id, product_details },
+    seo: { meta_title: raw.seo_title, meta_description: raw.seo_description },
+  };
+}
+
 const fetchProductDetail = cache(async (slug: string) => {
   const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE!;
   const API_KEY = process.env.MFS_API_KEY;
@@ -114,7 +180,8 @@ const fetchProductDetail = cache(async (slug: string) => {
     if (!res.ok) return null;
     const raw = await res.text();
     const idx = raw.indexOf('{"');
-    return JSON.parse(idx >= 0 ? raw.substring(idx) : raw);
+    const parsed = JSON.parse(idx >= 0 ? raw.substring(idx) : raw);
+    return normalizeProductDetail(parsed);
   } catch {
     return null;
   }

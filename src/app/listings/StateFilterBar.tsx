@@ -180,7 +180,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
   const [makeCounts,       setMakeCounts]       = useState<{name: string; slug: string; count: number; model?: {name: string; slug: string; count: number}[]}[]>(initialParamsCount?.make ?? []);
   const [modelCounts,      setModelCounts]      = useState<{name: string; slug: string; count: number}[]>([]);
 
-  /* ── Engine Make (UI scaffolding — no data source wired up yet) ── */
+  /* ──  Vehicle Make (UI scaffolding — no data source wired up yet) ── */
   const [tempEngineMake, setTempEngineMake] = useState<string | null>(null);
   const [stateCounts,      setStateCounts]      = useState<{name?: string; slug: string; count: number; region?: {name: string; slug: string; count: number}[]}[]>([]);
   const [regionCountsByState, setRegionCountsByState] = useState<Record<string, {name: string; slug: string; count: number}[]>>(() => paramsCountToRegionMap(initialParamsCount));
@@ -519,7 +519,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
     setMakeSubView("models");
   };
 
-  /* ── Engine Make (UI scaffolding — no data source wired up yet) ── */
+  /* ──  Vehicle Make (UI scaffolding — no data source wired up yet) ── */
   const handleEngineMakeOpen   = () => { setTempEngineMake(currentFilters.engine_make ?? null); setOpenModal("engineMake"); };
   const handleEngineMakeSearch = () => { updateFiltersAndURL({ engine_make: tempEngineMake ?? undefined }); setOpenModal(null); };
   const handleEngineMakeClear  = () => { setTempEngineMake(null); updateFiltersAndURL({ engine_make: undefined }); setOpenModal(null); };
@@ -697,7 +697,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
                   </button>
 
                   <button className={`tag${currentFilters.engine_make ? " active" : ""}`} onClick={handleEngineMakeOpen}>
-                    Engine Make
+                     Vehicle Make
                     {currentFilters.engine_make && <span className="active_filter"><i className="bi bi-circle-fill" /></span>}
                   </button>
 
@@ -1005,12 +1005,12 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
                 </div>
               </div>
 
-              {/* Engine Make — UI scaffolding only; no backend data source
+              {/*  Vehicle Make — UI scaffolding only; no backend data source
                * exists yet for engine_make. Once the API exposes an
                * engine_make grouping, replace this with a populated
                * select like the Make one above. */}
               <div className="filter-item">
-                <h4>Engine Make</h4>
+                <h4> Vehicle Make</h4>
                 <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
                   <div style={{ flex:1, minWidth:130 }}>
                     <select className="cfs-select-input form-select" value={tempEngineMake ?? ""} disabled>
@@ -1481,7 +1481,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
         </div>
       )}
 
-      {/* ── Engine Make Modal — UI scaffolding only; no backend data source
+      {/* ──  Vehicle Make Modal — UI scaffolding only; no backend data source
        * exists yet for engine_make, so this has no options list. Once the
        * API exposes an engine_make grouping, wire it up the same way Make
        * is wired (see makeCounts / filteredMakes above). ── */}
@@ -1489,11 +1489,11 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
         <div className="filter-overlay">
           <div className="filter-modal">
             <div className="filter-header">
-              <h3>Engine Make</h3>
+              <h3> Vehicle Make</h3>
               {closeBtn}
             </div>
             <div className="filter-body">
-              <p style={{ color:"#888", padding:"24px 4px" }}>Engine make filtering is coming soon.</p>
+              <p style={{ color:"#888", padding:"24px 4px" }}> Vehicle Make filtering is coming soon.</p>
             </div>
             <div className="filter-footer">
               <button className="clear" onClick={handleEngineMakeClear} style={{ opacity:tempEngineMake?1:0.4, cursor:tempEngineMake?"pointer":"not-allowed" }}>Clear filters</button>
