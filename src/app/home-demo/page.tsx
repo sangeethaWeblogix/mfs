@@ -3,7 +3,7 @@ import "../globals.css";
  import { fetchStateBasedCaravans } from "@/api/homeApi/state/api";
 import { fetchRequirements } from "@/api/postRquirements/api";
 import { fetchHomePage } from "@/api/home/api";
-import { fetchFeaturedListings } from "@/api/homeApi/featured/api";
+import { fetchHomeFeatured } from "@/api/homeApi/featured/api";
 import { fetchBlogs } from "@/api/blog/api";
 
 export const revalidate = 86400;
@@ -25,7 +25,7 @@ export default async function HomeDemoPage() {
     fetchStateBasedCaravans(),
     fetchRequirements(),
     fetchHomePage(),
-    fetchFeaturedListings(seed),
+    fetchHomeFeatured({ type: "all", seed }),
     fetchBlogs(1),
   ]);
 
