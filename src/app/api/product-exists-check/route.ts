@@ -1,47 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
-import { encodeObfuscated, readObfuscatedQuery } from "@/lib/obfuscation";
 
+export const preferredRegion = "syd1";
+import { fetchParamsCountFromKV } from "@/lib/paramsCountKv";
+
+const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
 const API_KEY = process.env.MFS_API_KEY;
-const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE || "https://admin.motorhomesforsale.com.au/wp-json/mfs/v1";
 
-// Body is obfuscated (see @/lib/obfuscation) so the raw JSON isn't readable
-// straight off the DevTools Network "Preview"/"Response" tab.
-function obf(data: unknown, init?: ResponseInit): NextResponse {
-  return new NextResponse(encodeObfuscated(data), {
-    ...init,
-    headers: { ...init?.headers, "Content-Type": "text/plain; charset=utf-8" },
-  });
-}
-
+/**
+ * Band-count lookup for the browse-section filter links (Price/ATM/Length/Sleep).
+ * Mirrors fetchBandCountServer in fetchBrowseSectionData.ts so the client-side
+ * refetch (filters changed after initial SSR) hits the same KV-first path
+ * instead of falling back to the heavier pool_test endpoint.
+ */
 export async function GET(request: NextRequest) {
-  const searchParams = readObfuscatedQuery(request.nextUrl.searchParams);
-  const url = `${API_BASE}/product_exists_check?${searchParams.toString()}`;
+  const searchParams = request.nextUrl.searchParams;
+  const paramsObj: Record<string, string> = {};
+  searchParams.forEach((v, k) => { paramsObj[k] = v; });
 
+  // 1. KV cache (shared with SSR path) — warmer may store total_products for this combo
+  const kv = await fetchParamsCountFromKV(paramsObj);
+  if (kv?.total_products != null) {
+    return NextResponse.json(
+      { success: true, exists: kv.total_products > 0, count: kv.total_products },
+      { headers: { "X-Params-Cache": "HIT" } }
+    );
+  }
+
+  // 2. KV miss — live fallback to WP product_exists_check
+  const paramsStr = searchParams.toString();
   try {
-    const response = await fetch(url, {
+    const res = await fetch(`${API_BASE}/product_exists_check?${paramsStr}`, {
       headers: {
         Accept: "application/json",
-        ...(API_KEY && { "X-Secret-Key": API_KEY }),
+        ...(API_KEY ? { "X-Secret-Key": API_KEY } : {}),
       },
-      cache: "no-store",
+      next: { revalidate: 3600 },
     });
-    if (!response.ok) {
-      console.error(
-        `[product-exists-check] WP API returned HTTP ${response.status} for "${searchParams.toString()}".`
-      );
-      return obf({ count: 0, exists: false }, { status: response.status });
+
+    if (!res.ok) {
+      return NextResponse.json({ success: false, exists: false, count: 0 }, { status: res.status });
     }
-    const raw = await response.text();
-    const idx = raw.indexOf("{");
-    try {
-      const data = JSON.parse(idx > 0 ? raw.substring(idx) : raw);
-      return obf(data);
-    } catch {
-      console.error("[product-exists-check] WP API returned unparseable body.");
-      return obf({ count: 0, exists: false });
-    }
+
+    const json = await res.json();
+    return NextResponse.json(json, { headers: { "X-Params-Cache": "MISS" } });
   } catch (err) {
-    console.error("[product-exists-check] WP API request failed:", err);
-    return obf({ count: 0, exists: false }, { status: 502 });
+    console.error(
+      `[product-exists-check] WP API fetch failed | params="${paramsStr}" | error="${(err as Error).message}"`
+    );
+    return NextResponse.json({ success: false, exists: false, count: 0 }, { status: 502 });
   }
 }

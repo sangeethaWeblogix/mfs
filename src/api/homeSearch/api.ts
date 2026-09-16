@@ -1,6 +1,4 @@
 // src/api/homeSearch/api.ts
-import { decodeObfuscated, obfuscateUrl } from "@/lib/obfuscation";
-
 const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
 const API_KEY = process.env.MFS_API_KEY; // ✅ Add this
 
@@ -57,7 +55,7 @@ export async function fetchHomeSearchList(): Promise<HomeSearchItem[]> {
   if (!res.ok) throw new Error(`HomeSearch API failed: ${res.status}`);
 
   try {
-    const json = decodeObfuscated<unknown>(await res.text());
+    const json = await res.json();
     return extractList(json);
   } catch {
     return [];
@@ -68,25 +66,27 @@ export async function fetchKeywordSuggestions(
   query: string,
   signal?: AbortSignal
 ): Promise<KeywordSuggestion[]> {
-  const url = obfuscateUrl(`/api/home-search/?keyword=${encodeURIComponent(query)}`);
+  const url = `/api/home-search/?keyword=${encodeURIComponent(query)}`;
 
   const res = await fetch(url, { cache: "no-store", signal });
   if (!res.ok) throw new Error(`Keyword API failed: ${res.status}`);
 
-  let json: { success?: boolean; data?: { keyword?: string; url?: string; id?: string | number }[] };
+  let json: { success?: boolean; data?: { name?: string; keyword?: string; url?: string; id?: string | number }[] };
   try {
-    json = decodeObfuscated(await res.text());
+    json = await res.json();
   } catch {
     return [];
   }
 
   const arr = Array.isArray(json?.data) ? json.data : [];
 
-  // ✅ return both keyword + url
+  // WP's /search-keyword returns { name, url } — no `keyword` or `id` field,
+  // despite what earlier code here assumed (that mismatch silently filtered
+  // every result out, since `x.keyword` was always undefined).
   return arr
-    .map((x) => ({
-      id: x?.id ?? "",
-      keyword: String(x?.keyword ?? "").trim(),
+    .map((x, idx) => ({
+      id: x?.id ?? x?.url ?? idx,
+      keyword: String(x?.name ?? x?.keyword ?? "").trim(),
       url: String(x?.url ?? "").trim(),
     }))
     .filter((x) => !!x.keyword);

@@ -1,21 +1,12 @@
-import { fetchParamsCountFromKV, normalizeCountItems } from "@/lib/paramsCountKv";
+import { fetchParamsCountFromKV } from "@/lib/paramsCountKv";
 
-const MPN_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
+const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
 const API_KEY  = process.env.MFS_API_KEY;
-
-// params-count calls (make/model/category counts) use the MPN key/base;
-// every other endpoint in this file keeps the CFS one.
- 
 
 /** Shared headers for every WP API call. */
 const wpHeaders = (): Record<string, string> => ({
   Accept: "application/json",
-...(API_KEY && { "X-Secret-Key": API_KEY }),
-});
-
-const mpnHeaders = (): Record<string, string> => ({
-  Accept: "application/json",
-...(API_KEY && { "X-Secret-Key": API_KEY }),
+  ...(API_KEY ? { "X-Secret-Key": API_KEY } : {}),
 });
 
 // ---------------------------------------------------------------------------
@@ -23,15 +14,20 @@ const mpnHeaders = (): Record<string, string> => ({
 // make_details is not pre-warmed in KV — rely on Next.js 24h fetch cache.
 // ---------------------------------------------------------------------------
 export const fetchMakeDetails = async () => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
   try {
-    const res = await fetch(`${MPN_BASE}/make_details`, {
+    const res = await fetch(`${API_BASE}/make_details`, {
       headers: wpHeaders(),
       next: { revalidate: 86400 },
+      signal: controller.signal,
     });
-    if (!res.ok) throw new Error("Failed to fetch make details");
+    clearTimeout(timeoutId);
+    if (!res.ok) return [];
     const json = await res.json();
     return json?.data?.make_options || [];
   } catch (error) {
+    clearTimeout(timeoutId);
     console.error("fetchMakeDetails error:", error);
     return [];
   }
@@ -53,9 +49,9 @@ export const fetchModelCounts = async (
   const timeoutId = setTimeout(() => controller.abort(), 8000);
   try {
     const res = await fetch(
-      `${MPN_BASE}/params-count?group_by=model&make=${encodeURIComponent(make)}`,
+      `${API_BASE}/params_count?group_by=model&make=${encodeURIComponent(make)}`,
       {
-        headers: mpnHeaders(),
+        headers: wpHeaders(),
         next: { revalidate: 3600 },
         signal: controller.signal,
       }
@@ -63,7 +59,7 @@ export const fetchModelCounts = async (
     clearTimeout(timeoutId);
     if (!res.ok) return [];
     const data = await res.json();
-    return normalizeCountItems(data?.data ?? []);
+    return data?.data ?? [];
   } catch {
     clearTimeout(timeoutId);
     return [];
@@ -94,13 +90,13 @@ export const fetchMakeCounts = async (): Promise<
 
   // 2. KV miss — WP fallback
   try {
-    const res = await fetch(`${MPN_BASE}/params-count?group_by=make`, {
-      headers: mpnHeaders(),
+    const res = await fetch(`${API_BASE}/params_count?group_by=make`, {
+      headers: wpHeaders(),
       next: { revalidate: 3600 },
     });
     if (!res.ok) return [];
     const data = await res.json();
-    return dedupBySlug(normalizeCountItems(data?.data ?? []));
+    return dedupBySlug(data?.data ?? []);
   } catch {
     return [];
   }
@@ -123,14 +119,14 @@ export const fetchCategoryCounts = async (): Promise<
 
   // 2. KV miss — WP fallback
   try {
-    const res = await fetch(`${MPN_BASE}/params-count?group_by=category`, {
-      headers: mpnHeaders(),
+    const res = await fetch(`${API_BASE}/params_count?group_by=category`, {
+      headers: wpHeaders(),
       next: { revalidate: 3600 },
     });
     if (!res.ok) return [];
     const data = await res.json();
-    return normalizeCountItems<{ name: string; slug: string; count: number }>(data?.data ?? []).map(
-      (c) => ({
+    return (data?.data ?? []).map(
+      (c: { name: string; slug: string; count: number }) => ({
         ...c,
         slug: c.slug.replace(/-category$/, ""),
       })
@@ -145,7 +141,7 @@ export const fetchCategoryCounts = async (): Promise<
 // ---------------------------------------------------------------------------
 export const fetchProductList = async () => {
   try {
-    const res = await fetch(`${MPN_BASE}/params-product-list`, {
+    const res = await fetch(`${API_BASE}/params-product-list`, {
       headers: wpHeaders(),
       next: { revalidate: 3600 },
     });

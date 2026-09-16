@@ -1,13 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const preferredRegion = "syd1";
+
 const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
 const API_KEY = process.env.MFS_API_KEY;
 
-// Normalize each product so components always get image_format as string[]
-// home_featured returns `thumbnail` (imagestack R2 URL); also handle `image` fallback
+// Normalize each product so components always get the fields they expect
+// (WP home-featured returns title/category/r2_thumbnails instead of name/categories/image_format)
 function normalizeProduct(p: any): any {
+  if (!p.name) p.name = p.title ?? "";
+  if (!p.categories) {
+    p.categories = Array.isArray(p.category) ? p.category : p.category ? [p.category] : [];
+  }
+  if (!p.location) {
+    p.location = [p.suburb, p.region, p.state]
+      .filter(Boolean)
+      .map((s: string) => s.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()))
+      .slice(0, 2)
+      .join(", ");
+  }
   if (!p.image_format) {
-    const img = p.thumbnail ?? p.image ?? p.main_image ?? null;
+    const img = p.thumbnail ?? p.image ?? p.main_image ?? p.r2_thumbnails?.[0] ?? null;
     p.image_format = img ? [img] : [];
   } else if (typeof p.image_format === "string") {
     p.image_format = [p.image_format];
@@ -16,12 +29,17 @@ function normalizeProduct(p: any): any {
   return p;
 }
 
-async function fetchType(
-  type: string,
-  seed: string | null,
-  visitorIp: string
-): Promise<{ products: any[] } | { error: string; status: number }> {
-  const url = `${API_BASE}/home_featured?type=${encodeURIComponent(type)}${seed ? `&seed=${encodeURIComponent(seed)}` : ""}`;
+export async function GET(request: NextRequest) {
+  const type     = request.nextUrl.searchParams.get("type") ?? "all";
+  const seed     = request.nextUrl.searchParams.get("seed");
+  const category = request.nextUrl.searchParams.get("category");
+  const url = `${API_BASE}/home-featured?type=${encodeURIComponent(type)}${seed ? `&seed=${encodeURIComponent(seed)}` : ""}${category ? `&category=${encodeURIComponent(category)}` : ""}`;
+
+  const visitorIp =
+    request.headers.get("cf-connecting-ip") ||
+    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    request.headers.get("x-real-ip") ||
+    "";
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -32,6 +50,7 @@ async function fetchType(
       signal: controller.signal,
       headers: {
         Accept: "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
         ...(API_KEY && { "X-Secret-Key": API_KEY }),
         ...(visitorIp && { "X-Visitor-IP": visitorIp }),
       },
@@ -44,81 +63,86 @@ async function fetchType(
     if (!res.ok) {
       const errBody = await res.text().catch(() => "(unreadable)");
       console.error(`[WP API] home_featured type=${type} non-OK status: ${res.status} body: ${errBody}`);
-      return { error: errBody, status: res.status };
-    }
-
-    const raw = await res.text();
-    const jsonStart = raw.indexOf('{');
-    const json = JSON.parse(jsonStart > 0 ? raw.substring(jsonStart) : raw);
-
-    // Response shape: { success, products: [...], meta: {...} }
-    const rawProducts: any[] = json?.products ?? json?.data?.products ?? [];
-    return { products: rawProducts.map(normalizeProduct) };
-  } catch (err: any) {
-    clearTimeout(timeoutId);
-    const status = err?.name === "AbortError" ? 504 : 500;
-    console.error(`[WP API] home_featured type=${type} fetch error (${status}):`, err?.message);
-    return { error: err?.message ?? "fetch failed", status };
-  }
-}
-
-export async function GET(request: NextRequest) {
-  const type = request.nextUrl.searchParams.get("type") ?? "all";
-  const seed = request.nextUrl.searchParams.get("seed");
-
-  const visitorIp =
-    request.headers.get("cf-connecting-ip") ||
-    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-    request.headers.get("x-real-ip") ||
-    "";
-
-  // "combined" lets the homepage fetch all/new/used in a single browser-visible
-  // request instead of 3 — we still hit the backend 3 times, just from the server.
-  if (type === "combined") {
-    const [all, newer, used] = await Promise.all([
-      fetchType("all", seed, visitorIp),
-      fetchType("new", seed, visitorIp),
-      fetchType("used", seed, visitorIp),
-    ]);
-
-    const firstError = [all, newer, used].find((r) => "error" in r) as { error: string; status: number } | undefined;
-    if (firstError && [all, newer, used].every((r) => "error" in r)) {
       return NextResponse.json(
-        { success: false, _wp_error: firstError.error },
+        { success: false, _wp_error: errBody },
         {
-          status: firstError.status,
-          headers: { "X-Debug-Visitor-IP": visitorIp || "(none)", "Cache-Control": "no-store" },
+          status: res.status,
+          headers: {
+            "X-Debug-Visitor-IP": visitorIp || "(none)",
+            "Cache-Control": "no-store",
+          },
         }
       );
     }
 
+    const raw = await res.text();
+
+    // Detect Cloudflare bot challenge (returns HTML with sgcaptcha or cf-chl)
+    if (raw.includes("sgcaptcha") || raw.includes("cf-chl") || raw.trimStart().startsWith("<html")) {
+      console.error(
+        `[WP API] home_featured type=${type} CLOUDFLARE CHALLENGE blocked request — ` +
+        `ip=${visitorIp || "(none)"}, url=${url}. ` +
+        `Fix: add a WAF bypass rule in Cloudflare for X-API-Key header.`
+      );
+      return NextResponse.json(
+        { success: false, _cf_blocked: true },
+        {
+          status: 503,
+          headers: {
+            "X-Debug-Visitor-IP": visitorIp || "(none)",
+            "Cache-Control": "no-store",
+          },
+        }
+      );
+    }
+
+    const jsonStart = raw.indexOf('{');
+    let json: any;
+    try {
+      json = JSON.parse(jsonStart > 0 ? raw.substring(jsonStart) : raw);
+    } catch {
+      console.error(
+        `[WP API] home_featured type=${type} unparseable body (first 500 chars): ` +
+          raw.slice(0, 500)
+      );
+      return NextResponse.json(
+        { success: false },
+        {
+          status: 502,
+          headers: {
+            "X-Debug-Visitor-IP": visitorIp || "(none)",
+            "Cache-Control": "no-store",
+          },
+        }
+      );
+    }
+
+    // Response shape: { success, items: [...], counts: {...} }
+    const rawProducts: any[] = json?.items ?? json?.products ?? json?.data?.products ?? [];
+    const products = rawProducts.map(normalizeProduct);
+
     return NextResponse.json(
+      { success: true, products },
       {
-        success: true,
-        products: {
-          all: "products" in all ? all.products : [],
-          new: "products" in newer ? newer.products : [],
-          used: "products" in used ? used.products : [],
+        headers: {
+          "X-Debug-Visitor-IP": visitorIp || "(none)",
+          "Cache-Control": "no-store",
         },
-      },
-      { headers: { "X-Debug-Visitor-IP": visitorIp || "(none)", "Cache-Control": "no-store" } }
+      }
     );
-  }
-
-  const result = await fetchType(type, seed, visitorIp);
-
-  if ("error" in result) {
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    const status = err?.name === "AbortError" ? 504 : 500;
+    console.error(`[WP API] home_featured type=${type} fetch error (${status}):`, err?.message);
     return NextResponse.json(
-      { success: false, _wp_error: result.error },
+      { success: false },
       {
-        status: result.status,
-        headers: { "X-Debug-Visitor-IP": visitorIp || "(none)", "Cache-Control": "no-store" },
+        status,
+        headers: {
+          "X-Debug-Visitor-IP": visitorIp || "(none)",
+          "Cache-Control": "no-store",
+        },
       }
     );
   }
-
-  return NextResponse.json(
-    { success: true, products: result.products },
-    { headers: { "X-Debug-Visitor-IP": visitorIp || "(none)", "Cache-Control": "no-store" } }
-  );
 }

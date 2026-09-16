@@ -11,13 +11,24 @@ export interface BlogPost {
   date: string;
 }
 
+interface RawBlogPost {
+  id: number;
+  title: string;
+  excerpt: string;
+  link: string;
+  slug: string;
+  date: string;
+  featured_image?: string;
+}
+
 export interface BlogApiResponse {
-  data: {
-    latest_blog_posts: {
-      items: BlogPost[];
-      current_page?: number;
-      total_pages?: number;
-    };
+  success: boolean;
+  data: RawBlogPost[];
+  meta?: {
+    total?: number;
+    page?: number;
+    per_page?: number;
+    total_pages?: number;
   };
 }
 
@@ -31,6 +42,13 @@ export type BlogPageResult = {
 
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_ATTEMPTS = 3;
+
+// WP occasionally stores featured_image with a doubled protocol
+// (e.g. "https://https://...") from a bad copy-paste in the admin — that
+// malformed URL crashes next/image's hostname check and takes down the
+// whole page for every visitor. Collapse it instead of passing it through.
+const sanitizeImageUrl = (url: string): string =>
+  url.replace(/^(https?:\/\/)+(?=https?:\/\/)/i, "");
 
 const fetchWithTimeout = async (url: string) => {
   const controller = new AbortController();
@@ -55,7 +73,7 @@ export const fetchBlogs = async (page: number = 1): Promise<BlogPageResult> => {
     return { items: [], currentPage: page, totalPages: 1, total_pages: 1, error: true };
   }
 
-  const url = `${API_BASE}/blog?page=${page}`;
+  const url = `${API_BASE}/blog?vehicle_type=caravans&page=${page}`;
 
   let lastErr: unknown;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -73,17 +91,21 @@ export const fetchBlogs = async (page: number = 1): Promise<BlogPageResult> => {
       const idx = raw.indexOf('{"');
       const data = JSON.parse(idx >= 0 ? raw.substring(idx) : raw) as BlogApiResponse;
 
-      const lp = data?.data?.latest_blog_posts ?? {
-        items: [],
-        current_page: page,
-        total_pages: 1,
-      };
+      const items: BlogPost[] = (data?.data ?? []).map((p) => ({
+        id: p.id,
+        title: p.title,
+        excerpt: p.excerpt,
+        link: p.link,
+        slug: p.slug,
+        date: p.date,
+        image: p.featured_image ? sanitizeImageUrl(p.featured_image) : "",
+      }));
 
       return {
-        items: lp.items ?? [],
-        currentPage: lp.current_page ?? page,
-        totalPages: lp.total_pages ?? 1,
-        total_pages: lp.total_pages ?? 1,
+        items,
+        currentPage: data?.meta?.page ?? page,
+        totalPages: data?.meta?.total_pages ?? 1,
+        total_pages: data?.meta?.total_pages ?? 1,
       };
     } catch (err) {
       console.error(`❌ fetchBlogs error (attempt ${attempt}/${MAX_ATTEMPTS}):`, err);

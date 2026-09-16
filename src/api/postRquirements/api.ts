@@ -21,15 +21,10 @@ type ListResp = {
 
 export async function fetchRequirements(): Promise<Requirement[]> {
   if (!API_BASE) return [];
-  // NOTE: the WP host's proxy cache is keyed on the exact URL including query
-  // string, and the plain "/cara_req" URL is stuck serving a stale cached
-  // "no enquiries found" response. "?debug=1" is a cache-busting workaround
-  // (same class of fix as the banners API) — not a real fix; the proxy cache
-  // config on the WP host still needs correcting for a durable solution.
-  const url = `${API_BASE}/cara_req?debug=1`;
+  const url = `${API_BASE}/get-home-enquiries-list`;
   try {
     const res = await fetch(url, {
-      cache: "no-store",
+      next: { revalidate: 86400 },
       headers: {
         Accept: "application/json",
         ...(API_KEY && { "X-Secret-Key": API_KEY }),
@@ -43,31 +38,4 @@ export async function fetchRequirements(): Promise<Requirement[]> {
   }
 }
 
-// If your backend accepts JSON POST at same endpoint.
-// If it’s form-data or a different path (e.g. /cara_req/create),
-// just tweak the fetch below.
-export async function createRequirement(
-  payload: Requirement
-): Promise<boolean> {
-  if (!API_BASE) throw new Error("Missing NEXT_PUBLIC_CFS_API_BASE");
-  const url = `${API_BASE}/cara_req`;
-  const res = await fetch(url, {
-    method: "POST",
-headers: {
-        Accept: "application/json",
-        ...(API_KEY && { "X-Secret-Key": API_KEY }), // ✅ Added
-      },    // normalize optional booleans to "0"/"1" strings if needed
-    body: JSON.stringify({
-      ...payload,
-      featured: payload.featured ?? "0",
-      active: payload.active ?? "1",
-    }),
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`createRequirement failed: ${res.status} ${text}`);
-  }
-  // if your API returns {success:true}, you can check it here:
-  // const json = await res.json(); return json?.success === true;
-  return true;
-}
+ 

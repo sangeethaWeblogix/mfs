@@ -7,11 +7,10 @@ export async function POST(req: NextRequest) {
   if (!API_BASE) {
     return NextResponse.json({ message: "API base not configured" }, { status: 500 });
   }
-  console.log("[enquiry] API_KEY present:", !!API_KEY, "length:", API_KEY?.length ?? 0);
 
   const payload = await req.json();
 
-  const res = await fetch(`${API_BASE}/enquiries/product`, {
+  const res = await fetch(`${API_BASE}/enquiries/home`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
