@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useEnquiryForm } from "@/app/components/ListContent/enquiryform";
-import { parseObfuscatedResponse, encodeObfuscated, obfuscateUrl } from "@/lib/obfuscation";
+import { encodeObfuscated } from "@/lib/obfuscation";
 import { Listing, SeoV2, buildFeaturedOrder } from "./listingShared";
 
 export type { Listing, SeoV2 };
@@ -455,33 +455,30 @@ export default function StateListingGrid({ title, viewAllHref, apiUrl, items: ex
     setFetchLoading(true);
     const requestUrl = `${apiUrl}&page=${page}`;
 
-    fetch(obfuscateUrl(requestUrl), { cache: "no-store" })
-      .then((r) => parseObfuscatedResponse(r))
+    fetch(requestUrl, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
-        // pool_test returns products/premium_products/exclusive_products at the
-        // top level; new_optimize_code nests them under `data` — support both shapes.
-        const products: Listing[]      = json?.data?.products ?? json?.products ?? [];
-        const premiumsRaw: Listing[]   = json?.data?.premium_products ?? json?.premium_products ?? [];
-        const exclusivesRaw: Listing[] = json?.data?.exclusive_products ?? json?.exclusive_products ?? [];
-        const empExclusivesRaw: Listing[] = json?.data?.emp_exclusive_products ?? json?.emp_exclusive_products ?? [];
-        const totalCount: number = json?.data?.counts?.total_count ?? json?.counts?.total_count ?? products.length;
+        // The pool endpoint segments products into featured/new/used buckets
+        // plus separate premium/exclusive lists — combine them for this grid.
+        const featuredRaw: Listing[]   = json?.featured_products  ?? [];
+        const newRaw: Listing[]        = json?.new_products       ?? [];
+        const usedRaw: Listing[]       = json?.used_products      ?? [];
+        const premiumsRaw: Listing[]   = json?.premium_products   ?? [];
+        const exclusivesRaw: Listing[] = json?.exclusive_products ?? [];
+        const products = [...featuredRaw, ...newRaw, ...usedRaw];
 
         // Featured (and combined) grid: slots 1 & 2 are regular featured vans,
         // slot 3 is the exclusive spotlight van, slots 4 & 5 are premium vans,
         // then the rest of the pool fills in after. New/Used grids: premium &
         // exclusive vans only ever show on the Featured tab — plain
         // condition-matched products here, nothing spliced in.
-        // No products at all — fall back to the emp_exclusive_products pool
-        // so the section isn't empty, all shown with the Spotlight Van design.
-        const merged: Listing[] = totalCount === 0 && empExclusivesRaw.length > 0
-          ? empExclusivesRaw.map((p) => ({ ...p, is_exclusive: true }))
-          : showSpotlight
-            ? buildFeaturedOrder(products, premiumsRaw, exclusivesRaw)
-            : products.filter((p) => !p.is_premium && !p.is_exclusive);
+        const merged: Listing[] = showSpotlight
+          ? buildFeaturedOrder(products, premiumsRaw, exclusivesRaw)
+          : products;
 
         setFetchedItems(maxItems ? merged.slice(0, maxItems) : merged);
         onTotalPages?.(json?.pagination?.total_pages ?? 1);
-        const seo = json?.data?.seo_v2 ?? json?.seo_v2;
+        const seo = json?.seo_v2;
         if (seo) onSeo?.(seo);
       })
       .catch(() => setFetchedItems([]))

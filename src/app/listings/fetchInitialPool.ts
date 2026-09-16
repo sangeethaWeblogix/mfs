@@ -14,7 +14,6 @@ import { Listing, SeoV2, buildFeaturedOrder } from "./listingShared";
 import type { InitialPool } from "./home";
 import type { FilterState } from "./StateFilterBar";
 import { seededShuffle } from "./seededShuffle";
-import { parseObfuscatedResponse } from "@/lib/obfuscation";
 
 const APP_URL         = process.env.NEXT_PUBLIC_APP_URL || "https://www.motorhomesforsale.com.au";
 // Direct WP API — used when seed > 0 to bypass Cloudflare's pool cache (which strips seed).
@@ -58,16 +57,16 @@ function buildApiParams(filters: FilterState, seed: number, perPage = 24): URLSe
  *   client no longer needs its own live re-fetch just to reshuffle.
  */
 function parsePoolJson(json: any, isIndexed: boolean, displaySeed: number): InitialPool | null {
-  const seo: SeoV2 | null = json?.data?.seo_v2 ?? json?.seo_v2 ?? null;
-  const products: Listing[]         = json?.data?.products         ?? json?.products         ?? [];
-  const premiumsRaw: Listing[]      = json?.data?.premium_products  ?? json?.premium_products  ?? [];
-  const exclusivesRaw: Listing[]    = json?.data?.exclusive_products ?? json?.exclusive_products ?? [];
-  const empExclusivesRaw: Listing[] = json?.data?.emp_exclusive_products ?? json?.emp_exclusive_products ?? [];
-  const totalCount: number          = json?.data?.counts?.total_count ?? json?.counts?.total_count ?? products.length;
+  const seo: SeoV2 | null = json?.seo_v2 ?? null;
+  const featuredRaw: Listing[]   = json?.featured_products  ?? [];
+  const newRaw: Listing[]        = json?.new_products       ?? [];
+  const usedRaw: Listing[]       = json?.used_products       ?? [];
+  const premiumsRaw: Listing[]   = json?.premium_products   ?? [];
+  const exclusivesRaw: Listing[] = json?.exclusive_products ?? [];
 
-  if (!products.length && !premiumsRaw.length) return null;
+  if (!featuredRaw.length && !newRaw.length && !usedRaw.length && !premiumsRaw.length) return null;
 
-  const totalProducts = json?.data?.pagination?.total_products ?? json?.pagination?.total_products ?? totalCount;
+  const totalProducts = json?.pagination?.total_products ?? json?.counts?.total ?? 0;
   const perPage = 24;
   const maxPages = Math.max(1, Math.ceil(totalProducts / perPage));
 
@@ -76,26 +75,13 @@ function parsePoolJson(json: any, isIndexed: boolean, displaySeed: number): Init
   let usedItems: Listing[] = [];
 
   if (isIndexed) {
-    const featuredSource = seededShuffle(
-      products.filter((p) => p.slot_bucket === "featured"),
-      displaySeed
-    );
-    featured = buildFeaturedOrder(featuredSource, premiumsRaw, exclusivesRaw);
-    const featuredIds = new Set(featured.map((p) => p.id));
-    newItems  = seededShuffle(
-      products.filter((p) => p.slot_bucket === "new"  && !p.is_premium && !p.is_exclusive && !featuredIds.has(p.id)),
-      displaySeed + 1000
-    );
-    usedItems = seededShuffle(
-      products.filter((p) => p.slot_bucket === "used" && !p.is_premium && !p.is_exclusive && !featuredIds.has(p.id)),
-      displaySeed + 2000
-    );
+    featured = buildFeaturedOrder(seededShuffle(featuredRaw, displaySeed), premiumsRaw, exclusivesRaw);
+    newItems  = seededShuffle(newRaw, displaySeed + 1000);
+    usedItems = seededShuffle(usedRaw, displaySeed + 2000);
   } else {
     // Non-indexed: combined grid, no slot splitting
-    const totalC = totalCount === 0 && empExclusivesRaw.length > 0;
-    featured = totalC
-      ? empExclusivesRaw
-      : buildFeaturedOrder(seededShuffle(products, displaySeed), premiumsRaw, exclusivesRaw);
+    const combined = [...featuredRaw, ...newRaw, ...usedRaw];
+    featured = buildFeaturedOrder(seededShuffle(combined, displaySeed), premiumsRaw, exclusivesRaw);
     newItems  = [];
     usedItems = [];
   }
@@ -117,10 +103,10 @@ async function fetchFromApi(filters: FilterState, seed: number, perPage = 24): P
   // return the same cached pool. Call WordPress directly instead.
   if (seed > 0 && WP_API_BASE) {
     try {
-      const res = await fetch(`${WP_API_BASE}/pool_test?${params.toString()}`, {
+      const res = await fetch(`${WP_API_BASE}/pool?${params.toString()}`, {
         headers: {
           Accept: "application/json",
-          ...(WP_API_KEY && { "X-API-Key": WP_API_KEY }),
+          ...(WP_API_KEY && { "X-Secret-Key": WP_API_KEY }),
         },
         cache: "no-store",
       });
@@ -133,12 +119,13 @@ async function fetchFromApi(filters: FilterState, seed: number, perPage = 24): P
     }
   }
 
-  // Default: go through /api/d1/ (Cloudflare orange-cloud → WP).
+  // Default: go through /api/pool-listings/ (proxies to WP's /pool).
   try {
-    const res = await fetch(`${APP_URL}/api/d1/?${params.toString()}`, {
+    const res = await fetch(`${APP_URL}/api/pool-listings/?${params.toString()}`, {
       cache: "no-store",
     });
-    return await parseObfuscatedResponse(res);
+    if (!res.ok) return null;
+    return await res.json();
   } catch {
     return null;
   }

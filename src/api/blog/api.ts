@@ -73,7 +73,7 @@ export const fetchBlogs = async (page: number = 1): Promise<BlogPageResult> => {
     return { items: [], currentPage: page, totalPages: 1, total_pages: 1, error: true };
   }
 
-  const url = `${API_BASE}/blog/motorhomes?per_page=12&page=${page}`;
+  const url = `${API_BASE}/blog?per_page=12&page=${page}`;
 
   let lastErr: unknown;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {

@@ -12,7 +12,6 @@ import type { BrowseSectionData } from "./browseSectionShared";
 import StateContent from "./StateContent";
 import { buildApiUrl, buildListingsSlug, buildFilterBreadcrumbs } from "./urlUtils";
 import { seededShuffle } from "./seededShuffle";
-import { parseObfuscatedResponse, obfuscateUrl } from "@/lib/obfuscation";
 import type { InitialParamsCount } from "./fetchInitialParamsCount";
 // import { useBanners } from "@/components/BannerHandler";
 // import { useBannerTracking } from "@/hooks/useBannerTracking";
@@ -120,10 +119,11 @@ export default function StateHome({
   // preload's is_indexed). Cleared whenever poolApiUrl changes (filter change).
   const preloadSnapshotRef = useRef<{
     poolApiUrl: string;
-    products: Listing[];
+    featuredRaw: Listing[];
+    newRaw: Listing[];
+    usedRaw: Listing[];
     premiumsRaw: Listing[];
     exclusivesRaw: Listing[];
-    empExclusivesRaw: Listing[];
     seoData: unknown;
     totalPages: number;
     isIndexed: boolean;  // is_indexed value from the preload — authoritative source
@@ -316,8 +316,8 @@ export default function StateHome({
       return;
     }
     const canonicalPath = buildListingsSlug(filters);
-    fetch(obfuscateUrl(`/api/d3/?path=${encodeURIComponent(canonicalPath)}`))
-      .then((r) => parseObfuscatedResponse(r))
+    fetch(`/api/indexed-url/?path=${encodeURIComponent(canonicalPath)}`)
+      .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
         // Suppress if either:
         //  (a) preloadSnapshotRef is set — snapshot already consumed, authoritative
@@ -335,7 +335,7 @@ export default function StateHome({
 
   // Page 1 uses ONE shared pool call, split by slot_bucket into
   // Featured/New/Used — instead of 3 separate condition-locked API calls.
-  const poolApiUrl = buildApiUrl("/api/d1/?per_page=24", filters, seed);
+  const poolApiUrl = buildApiUrl("/api/pool-listings/?per_page=24", filters, seed);
 
   useEffect(() => {
     // Wait for the real session seed to load (see the mount effect above) —
@@ -375,27 +375,20 @@ export default function StateHome({
       win.__INITIAL_POOL__ = undefined;
 
       const json = preload.json as Record<string, unknown>;
-      const seoData = (json as any)?.data?.seo_v2 ?? (json as any)?.seo_v2;
+      const seoData = (json as any)?.seo_v2;
       if (seoData) setSeo(seoData);
 
-      const products: Listing[] = (json as any)?.data?.products ?? (json as any)?.products ?? [];
-      const premiumsRaw: Listing[] = (json as any)?.data?.premium_products ?? (json as any)?.premium_products ?? [];
-      const exclusivesRaw: Listing[] = (json as any)?.data?.exclusive_products ?? (json as any)?.exclusive_products ?? [];
-      const empExclusivesRaw: Listing[] = (json as any)?.data?.emp_exclusive_products ?? (json as any)?.emp_exclusive_products ?? [];
-      const totalCount: number = (json as any)?.data?.counts?.total_count ?? (json as any)?.counts?.total_count ?? products.length;
+      const featuredRaw: Listing[]   = (json as any)?.featured_products  ?? [];
+      const newRaw: Listing[]        = (json as any)?.new_products       ?? [];
+      const usedRaw: Listing[]       = (json as any)?.used_products      ?? [];
+      const premiumsRaw: Listing[]   = (json as any)?.premium_products   ?? [];
+      const exclusivesRaw: Listing[] = (json as any)?.exclusive_products ?? [];
 
-      if (totalCount === 0 && empExclusivesRaw.length > 0) {
-        const empItems = empExclusivesRaw.map((p) => ({ ...p, is_exclusive: true }));
-        setPool({ featured: empItems, new: [], used: [] });
-      } else if (isIndexed) {
-        const featuredSource = products.filter((p) => p.slot_bucket === "featured");
-        const featuredItems = buildFeaturedOrder(featuredSource, premiumsRaw, exclusivesRaw);
-        const featuredIds = new Set(featuredItems.map((p) => p.id));
-        const newItems = products.filter((p) => p.slot_bucket === "new" && !p.is_premium && !p.is_exclusive && !featuredIds.has(p.id));
-        const usedItems = products.filter((p) => p.slot_bucket === "used" && !p.is_premium && !p.is_exclusive && !featuredIds.has(p.id));
-        setPool({ featured: featuredItems, new: newItems, used: usedItems });
+      if (isIndexed) {
+        const featuredItems = buildFeaturedOrder(featuredRaw, premiumsRaw, exclusivesRaw);
+        setPool({ featured: featuredItems, new: newRaw, used: usedRaw });
       } else {
-        const combined = buildFeaturedOrder(products, premiumsRaw, exclusivesRaw);
+        const combined = buildFeaturedOrder([...featuredRaw, ...newRaw, ...usedRaw], premiumsRaw, exclusivesRaw);
         setPool({ featured: combined, new: [], used: [] });
       }
 
@@ -403,16 +396,17 @@ export default function StateHome({
       handleTotalPages(totalPages);
       setPoolLoading(false);
 
-      // Save a snapshot so that if isIndexed changes later (e.g. /api/d3/
+      // Save a snapshot so that if isIndexed changes later (e.g. /api/indexed-url/
       // returns a different value than the embedded is_indexed), the pool effect
       // can re-bucket from this data instead of making a live fetch that would
       // overwrite the correct preload content.
       preloadSnapshotRef.current = {
         poolApiUrl,
-        products,
+        featuredRaw,
+        newRaw,
+        usedRaw,
         premiumsRaw,
         exclusivesRaw,
-        empExclusivesRaw,
         seoData: seoData ?? null,
         totalPages,
         isIndexed,  // record the is_indexed value used when consuming the preload
@@ -424,27 +418,22 @@ export default function StateHome({
 
     // If only isIndexed changed (same filter context / poolApiUrl) and we have
     // a preload snapshot, re-bucket from it instead of making a live request.
-    // This prevents the async /api/d3/ check from overwriting correct
+    // This prevents the async /api/indexed-url/ check from overwriting correct
     // preload data when it disagrees with the embedded is_indexed value.
     if (preloadSnapshotRef.current && preloadSnapshotRef.current.poolApiUrl === poolApiUrl) {
       const snap = preloadSnapshotRef.current;
       if (snap.seoData) setSeo(snap.seoData as Parameters<typeof setSeo>[0]);
-      const { products, premiumsRaw, exclusivesRaw, empExclusivesRaw } = snap;
+      const { featuredRaw, newRaw, usedRaw, premiumsRaw, exclusivesRaw } = snap;
       // Use snap.isIndexed (the is_indexed embedded in the preload), NOT the
       // current isIndexed state — which may have been overridden by the async
-      // /api/d3/ check. The preload value is authoritative.
+      // /api/indexed-url/ check. The preload value is authoritative.
       const snapIsIndexed = snap.isIndexed;
-      if (empExclusivesRaw.length > 0 && products.length === 0) {
-        setPool({ featured: empExclusivesRaw.map((p) => ({ ...p, is_exclusive: true })), new: [], used: [] });
-      } else if (snapIsIndexed) {
-        const featuredSource = products.filter((p) => p.slot_bucket === "featured");
-        const featuredItems = buildFeaturedOrder(featuredSource, premiumsRaw, exclusivesRaw);
-        const featuredIds = new Set(featuredItems.map((p) => p.id));
-        const newItems = products.filter((p) => p.slot_bucket === "new" && !p.is_premium && !p.is_exclusive && !featuredIds.has(p.id));
-        const usedItems = products.filter((p) => p.slot_bucket === "used" && !p.is_premium && !p.is_exclusive && !featuredIds.has(p.id));
-        setPool({ featured: featuredItems, new: newItems, used: usedItems });
+      if (snapIsIndexed) {
+        const featuredItems = buildFeaturedOrder(featuredRaw, premiumsRaw, exclusivesRaw);
+        setPool({ featured: featuredItems, new: newRaw, used: usedRaw });
       } else {
-        setPool({ featured: buildFeaturedOrder(products, premiumsRaw, exclusivesRaw), new: [], used: [] });
+        const combined = buildFeaturedOrder([...featuredRaw, ...newRaw, ...usedRaw], premiumsRaw, exclusivesRaw);
+        setPool({ featured: combined, new: [], used: [] });
       }
       handleTotalPages(snap.totalPages);
       // Also restore isIndexed state to the preload's value in case the async
@@ -468,51 +457,36 @@ export default function StateHome({
     setSeo(null);
 
     fetch(requestUrl, { cache: "no-store" })
-      .then((r) => parseObfuscatedResponse(r))
+      .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
         if (cancelled) return;
 
         // seo_v2 is set first, independently of the product-pool bucketing
         // below, so a bad product shape can never suppress the title/description.
-        const seoData = json?.data?.seo_v2 ?? json?.seo_v2;
+        const seoData = json?.seo_v2;
         if (seoData) setSeo(seoData);
 
-        const products: Listing[] = json?.data?.products ?? json?.products ?? [];
-        const premiumsRaw: Listing[] = json?.data?.premium_products ?? json?.premium_products ?? [];
-        const exclusivesRaw: Listing[] = json?.data?.exclusive_products ?? json?.exclusive_products ?? [];
-        const empExclusivesRaw: Listing[] = json?.data?.emp_exclusive_products ?? json?.emp_exclusive_products ?? [];
-        const totalCount: number = json?.data?.counts?.total_count ?? json?.counts?.total_count ?? products.length;
-        if (totalCount === 0 && empExclusivesRaw.length > 0) {
-          // No products at all — fall back to the emp_exclusive_products pool
-          // so the page isn't empty, all shown with the Spotlight Van design.
-          const empItems = empExclusivesRaw.map((p) => ({ ...p, is_exclusive: true }));
-          setPool({ featured: empItems, new: [], used: [] });
-        } else if (isIndexed) {
-          // Indexed pages split by slot_bucket into Featured/New/Used.
+        const featuredRaw: Listing[]   = json?.featured_products  ?? [];
+        const newRaw: Listing[]        = json?.new_products       ?? [];
+        const usedRaw: Listing[]       = json?.used_products      ?? [];
+        const premiumsRaw: Listing[]   = json?.premium_products   ?? [];
+        const exclusivesRaw: Listing[] = json?.exclusive_products ?? [];
+
+        if (isIndexed) {
+          // Indexed pages show Featured/New/Used as separate grids — the pool
+          // endpoint already segments products into these buckets.
           // seededShuffle reorders each bucket using the client's random seed so
           // different products appear on each refresh even when the pool-listings
           // KV cache serves the same JSON for every seed value.
-          const featuredSource = seededShuffle(
-            products.filter((p) => p.slot_bucket === "featured"),
-            seed
-          );
-          const featuredItems = buildFeaturedOrder(featuredSource, premiumsRaw, exclusivesRaw);
-          const featuredIds = new Set(featuredItems.map((p) => p.id));
-
-          const newItems = seededShuffle(
-            products.filter((p) => p.slot_bucket === "new" && !p.is_premium && !p.is_exclusive && !featuredIds.has(p.id)),
-            seed + 1000
-          );
-          const usedItems = seededShuffle(
-            products.filter((p) => p.slot_bucket === "used" && !p.is_premium && !p.is_exclusive && !featuredIds.has(p.id)),
-            seed + 2000
-          );
+          const featuredItems = buildFeaturedOrder(seededShuffle(featuredRaw, seed), premiumsRaw, exclusivesRaw);
+          const newItems = seededShuffle(newRaw, seed + 1000);
+          const usedItems = seededShuffle(usedRaw, seed + 2000);
 
           setPool({ featured: featuredItems, new: newItems, used: usedItems });
         } else {
           // Non-indexed pages get one combined grid instead of a split.
           const combined = buildFeaturedOrder(
-            seededShuffle(products, seed),
+            seededShuffle([...featuredRaw, ...newRaw, ...usedRaw], seed),
             premiumsRaw,
             exclusivesRaw
           );
@@ -553,16 +527,16 @@ export default function StateHome({
       conditionSeoConsumed.current = true;
       return;
     }
-    const newUrl = `${buildApiUrl("/api/d1/?per_page=1", filters, seed, "New")}&page=1`;
-    const usedUrl = `${buildApiUrl("/api/d1/?per_page=1", filters, seed, "Used")}&page=1`;
+    const newUrl = `${buildApiUrl("/api/pool-listings/?per_page=1", filters, seed, "New")}&page=1`;
+    const usedUrl = `${buildApiUrl("/api/pool-listings/?per_page=1", filters, seed, "Used")}&page=1`;
 
-    fetch(obfuscateUrl(newUrl), { cache: "no-store" })
-      .then((r) => parseObfuscatedResponse(r))
+    fetch(newUrl, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
       .then((json) => setNewSeo(json?.data?.seo_v2 ?? json?.seo_v2 ?? null))
       .catch(() => setNewSeo(null));
 
-    fetch(obfuscateUrl(usedUrl), { cache: "no-store" })
-      .then((r) => parseObfuscatedResponse(r))
+    fetch(usedUrl, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
       .then((json) => setUsedSeo(json?.data?.seo_v2 ?? json?.seo_v2 ?? null))
       .catch(() => setUsedSeo(null));
   }, [filters, seed, page, isIndexed]);
@@ -892,7 +866,7 @@ export default function StateHome({
   }
 
   // page > 1 — single combined grid, StateListingGrid self-fetches via apiUrl
-  const allUrl = buildApiUrl("/api/d1/?per_page=24", filters, seed);
+  const allUrl = buildApiUrl("/api/pool-listings/?per_page=24", filters, seed);
 
   return (
     <div className="lsd-page">
