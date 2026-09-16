@@ -7,7 +7,7 @@ import { fetchStateBasedCaravans } from "@/api/homeApi/state/api";
 import { fetchRequirements } from "@/api/postRquirements/api";
 import { fetchHomePage } from "@/api/home/api";
 import { fetchTypeCounts } from "@/api/homeApi/typeCounts/api";
-import { fetchFeaturedListings } from "@/api/homeApi/featured/api";
+import { fetchHomeFeatured } from "@/api/homeApi/featured/api";
 import { fetchBlogs } from "@/api/blog/api";
 
 const SEED_MAX = 15;
@@ -106,7 +106,7 @@ export default async function Page() {
     fetchRequirements(),
     fetchHomePage(),
     fetchTypeCounts(),
-    fetchFeaturedListings(seed),
+    fetchHomeFeatured({ seed }),
     fetchBlogs(1),
   ]);
 
