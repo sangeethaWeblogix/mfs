@@ -72,16 +72,16 @@ function getImages(item: Listing): string[] {
   return [];
 }
 
-function formatPrice(p: string | undefined): string {
-  if (!p) return "POA";
-  const n = Number(p.replace(/[^0-9.]/g, ""));
-  if (isNaN(n) || n === 0) return p;
+function formatPrice(p: string | number | null | undefined): string {
+  if (p === null || p === undefined || p === "") return "POA";
+  const n = typeof p === "number" ? p : Number(String(p).replace(/[^0-9.]/g, ""));
+  if (isNaN(n) || n === 0) return typeof p === "string" ? p : "POA";
   return `$${n.toLocaleString("en-US")}`;
 }
 
-function formatLength(len: string | undefined): string | null {
-  if (!len) return null;
-  const ft = parseFloat(len);
+function formatLength(len: string | number | null | undefined): string | null {
+  if (len === null || len === undefined || len === "") return null;
+  const ft = typeof len === "number" ? len : parseFloat(len);
   if (isNaN(ft)) return null;
   const m = (ft * 0.3048).toFixed(1);
   return `${ft} ft (${m}m)`;

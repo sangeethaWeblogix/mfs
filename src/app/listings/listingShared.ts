@@ -7,15 +7,15 @@ export type Listing = {
   state?: string;
   region?: string;
   suburb?: string;
-  regular_price: string;
-  sale_price?: string;
+  regular_price: string | number;
+  sale_price?: string | number | null;
   categories?: string[];
   image_format?: string[];
   image_url?: string[];
   image?: string;
   seller_type?: string;
   kg?: string;
-  length?: string;
+  length?: string | number;
   make?: string;
   is_premium?: boolean;
   is_exclusive?: boolean;
