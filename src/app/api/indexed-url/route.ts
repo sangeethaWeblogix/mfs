@@ -21,8 +21,8 @@ function loadIndexedPaths(): Set<string> {
   const csvPath = path.join(process.cwd(), "src", "app", "url.csv");
   const raw = fs.readFileSync(csvPath, "utf-8");
   const set = new Set<string>();
-  for (const line of raw.split("\n").slice(1)) {
-    const url = line.split("\t")[1];
+  for (const line of raw.split("\n")) {
+    const url = line.trim();
     if (url) set.add(normalize(url));
   }
   indexedPaths = set;

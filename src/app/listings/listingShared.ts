@@ -48,8 +48,9 @@ export type SeoV2 = {
   meta_description?: string;
   short_description?: string;
   footer_description?: string;
-  /** JSON-encoded string: `[{ "q": "...", "a": "..." }, ...]` */
-  faq?: string;
+  /** Either a JSON-encoded string or an already-parsed array of
+   * `{ q: "...", a: "..." }` — the API has returned both forms. */
+  faq?: string | { q: string; a: string }[];
 };
 
 /** Featured-tab ordering: slots 1 & 2 are regular featured vans, slot 3 is the

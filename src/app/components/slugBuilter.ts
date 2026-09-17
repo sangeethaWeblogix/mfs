@@ -30,6 +30,10 @@ export function buildSlugFromFilters(f: Filters): string {
   if (f.make) segments.push(toSlug(f.make));
   if (f.model) segments.push(modelSlug(f.model));
 
+  // 1b) Vehicle Make (chassis/engine manufacturer) — needs its own suffix
+  // since Make/Model are bare segments consumed positionally on parse.
+  if (f.engine_make) segments.push(`${toSlug(f.engine_make)}-vehicle-make`);
+
   // 2) Condition (display -> slug)
   if (f.condition) {
     const slug =

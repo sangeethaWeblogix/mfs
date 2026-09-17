@@ -7,13 +7,13 @@ type Faq = { q: string; a: string };
 
 interface Props {
   footerDescription?: string;
-  faq?: string;
+  faq?: string | Faq[];
 }
 
-function parseFaq(raw?: string): Faq[] {
+function parseFaq(raw?: string | Faq[]): Faq[] {
   if (!raw) return [];
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
     if (!Array.isArray(parsed)) return [];
     return parsed.filter((f): f is Faq => !!f?.q && !!f?.a);
   } catch {

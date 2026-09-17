@@ -16,6 +16,7 @@ export interface Filters {
   sleeps?: string;
   make?: string;
   model?: string;
+  engine_make?: string;
   orderby?: string;
   radius_kms?: string;
   page?: string;
@@ -45,7 +46,7 @@ export function parseSlugToFilters(
   };
 
   const hasReservedSuffix = (s: string) =>
-    /-(category|condition|state|region|suburb|keyword)$/.test(s) ||
+    /-(category|condition|state|region|suburb|keyword|vehicle-make)$/.test(s) ||
     /-(kg-gvm|length-in-feet|people-sleeping-capacity)$/.test(s) ||
     /^over-\d+/.test(s) ||
     /^under-\d+/.test(s) ||
@@ -83,6 +84,11 @@ export function parseSlugToFilters(
         .replace("-region", "")
         .replace(/-/g, " ")
         .toLowerCase();
+      return;
+    }
+
+    if (part.endsWith("-vehicle-make")) {
+      filters.engine_make = part.replace("-vehicle-make", "").toLowerCase();
       return;
     }
     const suburbWithPin = part.match(/^([a-z0-9-]+)-(\d{4})-suburb$/);

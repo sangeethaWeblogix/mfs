@@ -467,14 +467,20 @@ export default function StateListingGrid({ title, viewAllHref, apiUrl, items: ex
     fetch(requestUrl, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
-        // The pool endpoint segments products into featured/new/used buckets
-        // plus separate premium/exclusive lists — combine them for this grid.
-        const featuredRaw: Listing[]   = (json?.featured_products  ?? []).map(normalizeListing);
-        const newRaw: Listing[]        = (json?.new_products       ?? []).map(normalizeListing);
-        const usedRaw: Listing[]       = (json?.used_products      ?? []).map(normalizeListing);
+        // page 1 segments products into featured/new/used buckets; page 2+
+        // returns one flat `products` array instead (no featured_products/
+        // new_products/used_products keys at all) — without this check,
+        // every page past the first silently rendered zero items despite a
+        // valid, non-empty pagination block.
+        const products: Listing[] = Array.isArray(json?.products)
+          ? json.products.map(normalizeListing)
+          : [
+              ...(json?.featured_products ?? []).map(normalizeListing),
+              ...(json?.new_products      ?? []).map(normalizeListing),
+              ...(json?.used_products     ?? []).map(normalizeListing),
+            ];
         const premiumsRaw: Listing[]   = (json?.premium_products   ?? []).map(normalizeListing);
         const exclusivesRaw: Listing[] = (json?.exclusive_products ?? []).map(normalizeListing);
-        const products = [...featuredRaw, ...newRaw, ...usedRaw];
 
         // Featured (and combined) grid: slots 1 & 2 are regular featured vans,
         // slot 3 is the exclusive spotlight van, slots 4 & 5 are premium vans,
