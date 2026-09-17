@@ -13,7 +13,7 @@ export const fetchProductMeta = cache(async (slug: string): Promise<ProductMeta>
   const empty: ProductMeta = { title: "", description: "", canonical: "", ogImage: "" };
   try {
     const res = await fetch(
-      `${API_BASE}/product-detail-new?slug=${encodeURIComponent(slug)}`,
+      `${API_BASE}/${encodeURIComponent(slug)}`,
       {
         next: { revalidate: 3600 },
         headers: {

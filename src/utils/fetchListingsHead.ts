@@ -62,7 +62,7 @@ async function fetchPoolListingsForHead(
   params.set("page", String(page));
   if (filters.state) params.set("state", String(filters.state));
   if (filters.category) params.set("category", String(filters.category));
-  if (filters.make) params.set("make", String(filters.make));
+  if (filters.make) params.set("motorhome_make", String(filters.make));
   if (filters.model) params.set("model", String(filters.model));
   if (filters.region) params.set("region", String(filters.region));
   if (filters.suburb) params.set("suburb", String(filters.suburb));

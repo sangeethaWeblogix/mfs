@@ -307,7 +307,7 @@
          const controller = new AbortController();
          const timeoutId = setTimeout(() => controller.abort(), 5000);
          const apiRes = await fetch(
-           `${API_BASE}/product-detail-new?slug=${encodeURIComponent(slug)}`,
+           `${API_BASE}/${encodeURIComponent(slug)}`,
            {
              headers: {
                'User-Agent': 'next-middleware',

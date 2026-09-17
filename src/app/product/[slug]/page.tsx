@@ -168,7 +168,7 @@ const fetchProductDetail = cache(async (slug: string) => {
   const API_KEY = process.env.MFS_API_KEY;
   try {
     const res = await fetch(
-      `${API_BASE}/product-detail-new?slug=${encodeURIComponent(slug)}`,
+      `${API_BASE}/${encodeURIComponent(slug)}`,
       {
         cache: "no-store",
         headers: {
@@ -188,11 +188,31 @@ const fetchProductDetail = cache(async (slug: string) => {
 });
 
 
-async function fetchSimilarProducts(productId: string | number, seed: number) {
+/** Adapts a raw /{slug}/similar product (title, r2_thumbnails, category, gvm)
+ * into the fields ProductDetailDemo's MakeListing expects (name, image_format,
+ * categories) — same field-name mismatch as the pool endpoint's products. */
+function normalizeSimilarItem(raw: any) {
+  return {
+    id: raw.id,
+    name: raw.title ?? raw.name ?? "",
+    slug: raw.slug,
+    image_format: Array.isArray(raw.r2_thumbnails) ? raw.r2_thumbnails : (raw.image_format ?? []),
+    regular_price: raw.regular_price,
+    sale_price: raw.sale_price,
+    state: raw.state,
+    region: raw.region,
+    condition: raw.condition,
+    seller_type: raw.seller_type,
+    categories: Array.isArray(raw.category) ? raw.category : (raw.category ? [raw.category] : []),
+  };
+}
+
+async function fetchSimilarProducts(slug: string) {
+  const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
   const API_KEY = process.env.MFS_API_KEY;
   try {
     const res = await fetch(
-      `https://admin.motorhomesforsale.com.au/wp-json/mfs/v1/similar_products?product_id=${productId}&seed=${seed}`,
+      `${API_BASE}/${encodeURIComponent(slug)}/similar`,
       {
         cache: "no-store",
         headers: {
@@ -205,7 +225,11 @@ async function fetchSimilarProducts(productId: string | number, seed: number) {
     const raw = await res.text();
     const idx = raw.indexOf("{");
     const json = JSON.parse(idx > 0 ? raw.substring(idx) : raw);
-    return json?.sections ?? json?.data ?? json;
+    return {
+      make_similar: (json?.same_make ?? []).map(normalizeSimilarItem),
+      price_similar: (json?.price_range ?? []).map(normalizeSimilarItem),
+      blogs: json?.blog ?? [],
+    };
   } catch {
     return null;
   }
@@ -256,13 +280,12 @@ export default async function ProductDetailPage({ params }: PageProps) {
     },
   };
 
-  const productId = pd.id ?? pd.product_id ?? data?.data?.id ?? data?.id ?? "";
   const seed = Math.ceil(Math.random() * 10);
-  const similarData = productId ? await fetchSimilarProducts(productId, seed) : null;
+  const similarData = await fetchSimilarProducts(slug);
 
   // Shuffle price section server-side (API doesn't shuffle it)
-  if (similarData?.similar_by_price?.products?.length) {
-    const arr = similarData.similar_by_price.products;
+  if (similarData?.price_similar?.length) {
+    const arr = similarData.price_similar;
     let s = seed * 9301 + 49297;
     for (let i = arr.length - 1; i > 0; i--) {
       s = (s * 9301 + 49297) % 233280;

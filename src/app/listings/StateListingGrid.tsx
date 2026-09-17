@@ -87,6 +87,15 @@ function formatLength(len: string | number | null | undefined): string | null {
   return `${ft} ft (${m}m)`;
 }
 
+function formatWeight(kg: string | number | null | undefined): string | null {
+  if (kg === null || kg === undefined || kg === "") return null;
+  const s = String(kg).trim();
+  if (/kg$/i.test(s)) return s;
+  const n = typeof kg === "number" ? kg : parseFloat(kg);
+  if (isNaN(n)) return s;
+  return `${n.toLocaleString("en-US")} kg`;
+}
+
 const AUS_ABBR: Record<string, string> = {
   "VICTORIA": "VIC",
   "NEW SOUTH WALES": "NSW",
@@ -221,12 +230,13 @@ function ListingCard({
  
   const sellerType = toTitleCase(item.seller_type ?? "");
   const lenFmt   = formatLength(item.length);
+  const kgFmt    = formatWeight(item.kg);
   const isDealer = item.seller_type !== "private";
 
   // Always 4 slots so grid rows are the same height across all cards
   const specSlots = [
      { icon: "/images/length.svg",   text: lenFmt  || "" },
-    { icon: "/images/weight.svg",   text: item.kg || "" },
+    { icon: "/images/weight.svg",   text: kgFmt || "" },
     { icon: "",                     text: "" },
   ];
 
@@ -241,12 +251,12 @@ function ListingCard({
    } catch {}
    };
 
-     const postTrackEvent = async (product_id: number) => {
+     const postTrackEvent = async (slug: string) => {
     try {
        await fetch("/api/d4/", {
         method: "POST",
          headers: { "Content-Type": "text/plain" },
-         body: encodeObfuscated({ product_id }),
+         body: encodeObfuscated({ slug }),
        });
      } catch {}
    };
@@ -258,8 +268,7 @@ function ListingCard({
        (entries) => {
         entries.forEach((entry) => {
            if (entry.isIntersecting) {
-            const id = Number(entry.target.getAttribute("data-product-id"));
-            if (id) postTrackEvent(id);
+            if (item.slug) postTrackEvent(item.slug);
             observer.unobserve(entry.target);
           }
         });
@@ -370,11 +379,11 @@ function ListingCard({
         {/* Row 4: divider */}
         <hr className="lsd-card__divider" />
 
-        {/* Row 5: specs — always 4 slots in 2×2 grid */}
+        {/* Row 5: specs — empty values are skipped instead of rendering a blank slot */}
         <div className="lsd-card__specs-grid">
-          {specSlots.map((s, i) => (
+          {specSlots.filter(s => s.text).map((s, i) => (
             <span key={i} className="lsd-card__spec">
-              {s.text && s.icon && (
+              {s.icon && (
                 <img src={s.icon} alt="" className="lsd-card__spec-icon" />
               )}
               {s.text}

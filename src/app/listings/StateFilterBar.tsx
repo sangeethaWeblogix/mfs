@@ -88,22 +88,12 @@ const buildMakeCountParams = (filters: FilterState): URLSearchParams => {
   return params;
 };
 
-/** Same shape the /api/d2/?group_by=make,condition,state combined
- * response nests each state's region breakdown in — shared by the initial
- * state (server-fetched) and the client fallback fetch below. */
+/** group_by=state never nests a region breakdown (params-count only returns
+ * regions when scoped to a single state via group_by=region&state=<slug>) —
+ * so this just carries the state list itself; regions are fetched on demand
+ * per state (see the "regions" locationSubView effect below). */
 function paramsCountToStates(data?: InitialParamsCount | null): StateOption[] {
-  return (data?.state || []).map((s) => ({
-    name: s.name,
-    value: s.slug,
-    regions: (s.region || []).map((r) => ({ name: r.name, value: r.slug })),
-  }));
-}
-function paramsCountToRegionMap(data?: InitialParamsCount | null): Record<string, { name: string; slug: string; count: number }[]> {
-  const regionMap: Record<string, { name: string; slug: string; count: number }[]> = {};
-  (data?.state || []).forEach((s) => {
-    if (s.slug) regionMap[s.slug] = s.region || [];
-  });
-  return regionMap;
+  return (data?.state || []).map((s) => ({ name: s.name, value: s.slug }));
 }
 
 export default function StateFilterBar({ currentFilters, onFilterChange, onClearAll, initialParamsCount }: Props) {
@@ -116,7 +106,6 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
   // scoped filter is cleared instead of re-fetching the exact same unscoped
   // breakdown the combined call already gave us.
   const baselineMakeCountsRef = useRef<{name: string; slug: string; count: number; model?: {name: string; slug: string; count: number}[]}[]>(initialParamsCount?.make ?? []);
-  const baselineRegionCountsByStateRef = useRef<Record<string, {name: string; slug: string; count: number}[]>>(paramsCountToRegionMap(initialParamsCount));
 
   // Single consolidated initial fetch — replaces the old separate
   // /api/product-list/ (states) and /api/make-details/ (makes) calls with one
@@ -138,20 +127,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
           setMakes(data.make || []);
           setMakeCounts(data.make || []);
           baselineMakeCountsRef.current = data.make || [];
-          setStates((data.state || []).map((s: any) => ({
-            name: s.name,
-            value: s.slug,
-            regions: (s.region || []).map((r: any) => ({ name: r.name, value: r.slug })),
-          })));
-          // Seed regionCountsByState from this same combined response (each
-          // state entry already nests its region breakdown with counts) so the
-          // no-filter initial page load doesn't need its own group_by=state call.
-          const regionMap: Record<string, { name: string; slug: string; count: number }[]> = {};
-          (data.state || []).forEach((s: any) => {
-            if (s.slug) regionMap[s.slug] = (s.region || []).map((r: any) => ({ name: r.name, slug: r.slug, count: r.count }));
-          });
-          setRegionCountsByState(regionMap);
-          baselineRegionCountsByStateRef.current = regionMap;
+          setStates((data.state || []).map((s: any) => ({ name: s.name, value: s.slug })));
         }
         setCatLoading(false);
       })
@@ -180,10 +156,12 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
   const [makeCounts,       setMakeCounts]       = useState<{name: string; slug: string; count: number; model?: {name: string; slug: string; count: number}[]}[]>(initialParamsCount?.make ?? []);
   const [modelCounts,      setModelCounts]      = useState<{name: string; slug: string; count: number}[]>([]);
 
-  /* ──  Vehicle Make (UI scaffolding — no data source wired up yet) ── */
+  /* ──  Vehicle Make (chassis manufacturer — group_by=vehicle_make) ── */
   const [tempEngineMake, setTempEngineMake] = useState<string | null>(null);
+  const [engineMakeSearch, setEngineMakeSearch] = useState("");
+  const [vehicleMakeCounts, setVehicleMakeCounts] = useState<{name: string; slug: string; count: number}[]>([]);
   const [stateCounts,      setStateCounts]      = useState<{name?: string; slug: string; count: number; region?: {name: string; slug: string; count: number}[]}[]>([]);
-  const [regionCountsByState, setRegionCountsByState] = useState<Record<string, {name: string; slug: string; count: number}[]>>(() => paramsCountToRegionMap(initialParamsCount));
+  const [regionCountsByState, setRegionCountsByState] = useState<Record<string, {name: string; slug: string; count: number}[]>>({});
   const [lastModelName,    setLastModelName]    = useState<string | null>(null);
 
   // Live make counts — same /api/d2/ endpoint FilterSlider uses,
@@ -218,6 +196,27 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
     currentFilters.keyword,
   ]);
 
+  // Live vehicle (chassis/engine) make counts — group_by=vehicle_make, same
+  // /api/d2/ endpoint as the Make counts above. No SSR-seeded baseline exists
+  // for this dimension, so it always fetches (including on mount, unscoped).
+  useEffect(() => {
+    const controller = new AbortController();
+    const params = buildMakeCountParams(currentFilters);
+    if (currentFilters.make) params.set("motorhome_make", currentFilters.make);
+    params.set("group_by", "vehicle_make");
+    fetch(obfuscateUrl(`/api/d2/?${params.toString()}`), { signal: controller.signal })
+      .then(r => parseObfuscatedResponse(r))
+      .then(json => { if (!controller.signal.aborted) setVehicleMakeCounts(json?.data?.vehicle_make ?? []); })
+      .catch(e => { if (e.name !== "AbortError") console.error(e); });
+    return () => controller.abort();
+  }, [
+    currentFilters.make, currentFilters.category, currentFilters.condition, currentFilters.state, currentFilters.region,
+    currentFilters.suburb, currentFilters.pincode, currentFilters.from_price, currentFilters.to_price,
+    currentFilters.minKg, currentFilters.maxKg, currentFilters.acustom_fromyears, currentFilters.acustom_toyears,
+    currentFilters.from_length, currentFilters.to_length, currentFilters.from_sleep, currentFilters.to_sleep,
+    currentFilters.keyword,
+  ]);
+
   // Live state counts — only used when a make filter is active (e.g. /listings/jayco/).
   // Calls /api/d2/?make={make}&group_by=state so the state list narrows
   // to only the states that actually have listings for that make.
@@ -226,7 +225,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
     if (!currentFilters.make) { setStateCounts([]); return; }
     const controller = new AbortController();
     const params = new URLSearchParams();
-    params.set("make", currentFilters.make);
+    params.set("motorhome_make", currentFilters.make);
     if (currentFilters.category)          params.set("category", currentFilters.category);
     if (currentFilters.condition)         params.set("condition", currentFilters.condition);
     if (currentFilters.from_price)        params.set("from_price", String(currentFilters.from_price));
@@ -254,31 +253,26 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
     currentFilters.keyword,
   ]);
 
-  // Region breakdown per state is already nested inside each entry of the
-  // group_by=state response above (params_count no longer accepts group_by=region
-  // as its own value — it 400s). So instead of a second round of per-state
-  // fetches, just fan the nested data already in stateCounts out into the
-  // regionCountsByState shape the rest of the component expects.
-  useEffect(() => {
-    if (!stateCounts.length || !currentFilters.make) return;
-    setRegionCountsByState(prev => {
-      const next = { ...prev };
-      stateCounts.forEach(sc => { if (sc.slug) next[sc.slug] = sc.region ?? []; });
-      return next;
-    });
-  }, [stateCounts, currentFilters.make]);
-
-  // Model breakdown per make is already nested inside each entry of the
-  // group_by=make response (see "Live make counts" above) — params_count no
-  // longer accepts group_by=model as its own value. Read the matching make's
-  // nested list instead of firing a second (now-invalid) request.
+  // Model breakdown for the selected make — group_by=make never nests a
+  // model breakdown (params-count only returns it when scoped to one make
+  // via group_by=model&motorhome_make=<slug>), so it's fetched on demand
+  // whenever the selected make changes.
   useEffect(() => {
     if (!tempMake) { setModelCounts([]); return; }
-    const data = makeCounts.find(m => m.slug === tempMake)?.model ?? [];
-    setModelCounts(data);
-    const matched = data.find(m => m.slug === currentFilters.model);
-    if (matched) setLastModelName(matched.name);
-  }, [tempMake, makeCounts, currentFilters.model]);
+    const controller = new AbortController();
+    const params = new URLSearchParams({ motorhome_make: tempMake, group_by: "model" });
+    fetch(obfuscateUrl(`/api/d2/?${params.toString()}`), { signal: controller.signal })
+      .then(r => parseObfuscatedResponse(r))
+      .then(json => {
+        if (controller.signal.aborted) return;
+        const data = json?.data?.model ?? [];
+        setModelCounts(data);
+        const matched = data.find((m: {slug: string; name: string}) => m.slug === currentFilters.model);
+        if (matched) setLastModelName(matched.name);
+      })
+      .catch(e => { if (e.name !== "AbortError") console.error(e); });
+    return () => controller.abort();
+  }, [tempMake, currentFilters.model]);
 
   /* ── Temp filter values ── */
   const [tempState,        setTempState]        = useState<string | null>(null);
@@ -301,41 +295,37 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
 
   const [locationSubView, setLocationSubView] = useState<"states" | "regions">("states");
 
-  // Region counts when NO make is active (e.g. the plain /listings/ page).
-  // group_by=state already nests each state's region breakdown (params_count
-  // no longer accepts group_by=region as its own value), so one group_by=state
-  // call — scoped by category/condition — populates every state's regions at
-  // once instead of needing a fetch per state.
-  useEffect(() => {
-    if (currentFilters.make) return;
-    // No category/condition scoping — the initial combined fetch already
-    // seeded regionCountsByState with this exact (unscoped) breakdown.
-    if (!currentFilters.category && !currentFilters.condition) {
-      setRegionCountsByState(baselineRegionCountsByStateRef.current);
-      return;
-    }
-    const controller = new AbortController();
-    const params = new URLSearchParams({ group_by: "state" });
-    if (currentFilters.category)  params.set("category", currentFilters.category);
-    if (currentFilters.condition) params.set("condition", currentFilters.condition);
-    fetch(obfuscateUrl(`/api/d2/?${params}`), { signal: controller.signal })
-      .then(r => parseObfuscatedResponse(r))
-      .then(json => {
-        if (controller.signal.aborted) return;
-        const data: { slug: string; region?: { name: string; slug: string; count: number }[] }[] = json?.data?.state ?? [];
-        setRegionCountsByState(prev => {
-          const next = { ...prev };
-          data.forEach(sc => { if (sc.slug) next[sc.slug] = sc.region ?? []; });
-          return next;
-        });
-      })
-      .catch(e => { if (e.name !== "AbortError") console.error("[StateFilterBar] region fetch failed", e); });
-    return () => controller.abort();
-  }, [currentFilters.make, currentFilters.category, currentFilters.condition]);
-
   const [openModal, setOpenModal] = useState<
     "type"|"location"|"price"|"gvm"|"make"|"engineMake"|"condition"|"sleep"|"allFilters"|null
   >(null);
+
+  // Regions for the state currently being viewed — in the standalone Location
+  // modal's region sub-view, or the State/Region selects inside the combined
+  // Filters modal. params-count only returns a region breakdown when scoped
+  // to one state (group_by=region&state=<slug>); group_by=state itself never
+  // nests one. Fetched on demand, cached per state slug.
+  useEffect(() => {
+    const showingRegions = locationSubView === "regions" || openModal === "allFilters";
+    if (!showingRegions || !tempState) return;
+    const slug = states.find(s => s.name.toLowerCase() === tempState.toLowerCase() || s.value.toLowerCase() === tempState.toLowerCase())?.value;
+    if (!slug) return;
+    const key = slug.toLowerCase();
+    if (regionCountsByState[key]) return;
+
+    const controller = new AbortController();
+    const params = buildMakeCountParams(currentFilters);
+    if (currentFilters.make) params.set("motorhome_make", currentFilters.make);
+    params.set("state", key);
+    params.set("group_by", "region");
+    fetch(obfuscateUrl(`/api/d2/?${params.toString()}`), { signal: controller.signal })
+      .then(r => parseObfuscatedResponse(r))
+      .then(json => {
+        if (controller.signal.aborted) return;
+        setRegionCountsByState(prev => ({ ...prev, [key]: json?.data?.region ?? [] }));
+      })
+      .catch(e => { if (e.name !== "AbortError") console.error("[StateFilterBar] region fetch failed", e); });
+    return () => controller.abort();
+  }, [locationSubView, openModal, tempState, states, currentFilters.make, currentFilters.category, currentFilters.condition, regionCountsByState]);
 
   /* ── Keyword search suggestions — same /api/home-search/ endpoint the
    * production filter modal uses: base/popular list on focus, live typed
@@ -433,14 +423,16 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
   const activeRegionCounts = tempStateSlug ? regionCountsByState[tempStateSlug.toLowerCase()] : undefined;
   const filteredRegions = (activeRegionCounts ?? [])
     .filter(rc => rc.count > 0)
-    .map(rc => ({ name: rc.name, value: rc.slug }));
+    .map(rc => ({ name: rc.name, value: rc.slug }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   // When a make filter is active, narrow the state list to only states with
   // count > 0 for that make. Falls back to the full list when no make is set
   // (global /listings/ page) or before the first API response arrives.
-  const visibleStates = stateCounts.length > 0
+  const visibleStates = (stateCounts.length > 0
     ? states.filter(s => stateCounts.some(sc => sc.slug === s.value && sc.count > 0))
-    : states;
+    : states
+  ).slice().sort((a, b) => a.name.localeCompare(b.name));
 
   const makeSource  = makeCounts.length > 0 ? makeCounts : makes.map(m => ({ name: m.name, slug: m.slug, count: 0 }));
   const filteredMakes = makeSearch
@@ -454,7 +446,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
             return rank(an) - rank(bn);
           });
       })()
-    : makeSource;
+    : makeSource.slice().sort((a, b) => a.name.localeCompare(b.name));
   const modelSource = modelCounts;
   const filteredModels = modelSearch
     ? (() => {
@@ -467,7 +459,20 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
             return rank(an) - rank(bn);
           });
       })()
-    : modelSource;
+    : modelSource.slice().sort((a, b) => a.name.localeCompare(b.name));
+
+  const filteredVehicleMakes = engineMakeSearch
+    ? (() => {
+        const q = engineMakeSearch.toLowerCase();
+        return vehicleMakeCounts
+          .filter(m => m.name.toLowerCase().includes(q))
+          .sort((a, b) => {
+            const an = a.name.toLowerCase(), bn = b.name.toLowerCase();
+            const rank = (n: string) => n.startsWith(q) ? 0 : n.includes(` ${q}`) ? 1 : 2;
+            return rank(an) - rank(bn);
+          });
+      })()
+    : vehicleMakeCounts.slice().sort((a, b) => a.name.localeCompare(b.name));
 
   /* ── Core update fn ── */
   const updateFiltersAndURL = (updates: Partial<FilterState>) => {
@@ -519,8 +524,8 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
     setMakeSubView("models");
   };
 
-  /* ──  Vehicle Make (UI scaffolding — no data source wired up yet) ── */
-  const handleEngineMakeOpen   = () => { setTempEngineMake(currentFilters.engine_make ?? null); setOpenModal("engineMake"); };
+  /* ── Vehicle Make (chassis/engine manufacturer) ── */
+  const handleEngineMakeOpen   = () => { setTempEngineMake(currentFilters.engine_make ?? null); setEngineMakeSearch(""); setOpenModal("engineMake"); };
   const handleEngineMakeSearch = () => { updateFiltersAndURL({ engine_make: tempEngineMake ?? undefined }); setOpenModal(null); };
   const handleEngineMakeClear  = () => { setTempEngineMake(null); updateFiltersAndURL({ engine_make: undefined }); setOpenModal(null); };
 
@@ -692,7 +697,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
                   </button>
 
                   <button className={`tag${currentFilters.make ? " active" : ""}`} onClick={handleMakeOpen}>
-                    Make
+                    Motorhome Make
                     {currentFilters.make && <span className="active_filter"><i className="bi bi-circle-fill" /></span>}
                   </button>
 
@@ -980,14 +985,14 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
 
               {/* Make & Model */}
               <div className="filter-item">
-                <h4>Make &amp; Model</h4>
+                <h4>Motorhome Make &amp; Model</h4>
                 <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
                   <div style={{ flex:1, minWidth:130 }}>
-                    <label style={{ fontSize:13, color:"#555", display:"block", marginBottom:6 }}>Make</label>
+                    <label style={{ fontSize:13, color:"#555", display:"block", marginBottom:6 }}>Motorhome Make</label>
                     <select className="cfs-select-input form-select" value={tempMake ?? ""}
                       onChange={e => { setTempMake(e.target.value || null); setTempModel(null); }}>
                       <option value="">Any</option>
-                      {makes.map(m => <option key={m.slug} value={m.slug}>{m.name}</option>)}
+                      {makes.slice().sort((a, b) => a.name.localeCompare(b.name)).map(m => <option key={m.slug} value={m.slug}>{m.name}</option>)}
                     </select>
                   </div>
                   <div style={{ flex:1, minWidth:130 }}>
@@ -997,7 +1002,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
                       value={tempModel ?? ""}
                       onChange={e => setTempModel(e.target.value || null)}>
                       <option value="">Any</option>
-                      {modelCounts.map(mod => (
+                      {modelCounts.slice().sort((a, b) => a.name.localeCompare(b.name)).map(mod => (
                         <option key={mod.slug} value={mod.slug}>{mod.name}</option>
                       ))}
                     </select>
@@ -1005,16 +1010,15 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
                 </div>
               </div>
 
-              {/*  Vehicle Make — UI scaffolding only; no backend data source
-               * exists yet for engine_make. Once the API exposes an
-               * engine_make grouping, replace this with a populated
-               * select like the Make one above. */}
+              {/* Vehicle Make — group_by=vehicle_make (chassis/engine manufacturer) */}
               <div className="filter-item">
-                <h4> Vehicle Make</h4>
+                <h4>Vehicle Make</h4>
                 <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
                   <div style={{ flex:1, minWidth:130 }}>
-                    <select className="cfs-select-input form-select" value={tempEngineMake ?? ""} disabled>
-                      <option value="">Coming soon</option>
+                    <select className="cfs-select-input form-select" value={tempEngineMake ?? ""}
+                      onChange={e => setTempEngineMake(e.target.value || null)}>
+                      <option value="">Any</option>
+                      {vehicleMakeCounts.slice().sort((a, b) => a.name.localeCompare(b.name)).map(m => <option key={m.slug} value={m.slug}>{m.name}</option>)}
                     </select>
                   </div>
                 </div>
@@ -1411,10 +1415,10 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
             <div className="filter-header" style={{ position:"relative" }}>
               {makeSubView === "models" ? (
                 <>
-                  <button className="loc-back-btn" onClick={() => setMakeSubView("makes")}><i className="bi bi-chevron-left" /> Make</button>
+                  <button className="loc-back-btn" onClick={() => setMakeSubView("makes")}><i className="bi bi-chevron-left" /> Motorhome Make</button>
                   <h3 style={{ position:"absolute", left:"50%", transform:"translateX(-50%)", margin:0 }}>Model</h3>
                 </>
-              ) : <h3>Make &amp; Model</h3>}
+              ) : <h3>Motorhome Make &amp; Model</h3>}
               {closeBtn}
             </div>
             <div className="filter-search-bar">
@@ -1426,7 +1430,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
               <div className="loc-search-wrap" style={{ marginBottom:0 }}>
                 <i className="bi bi-search loc-search-icon" />
                 <input className="loc-search-input" type="text"
-                  placeholder={makeSubView === "makes" ? "Search make" : "Search model"}
+                  placeholder={makeSubView === "makes" ? "Search motorhome make" : "Search model"}
                   value={makeSubView === "makes" ? makeSearch : modelSearch}
                   onChange={e => makeSubView === "makes" ? setMakeSearch(e.target.value) : setModelSearch(e.target.value)}
                 />
@@ -1481,19 +1485,45 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
         </div>
       )}
 
-      {/* ──  Vehicle Make Modal — UI scaffolding only; no backend data source
-       * exists yet for engine_make, so this has no options list. Once the
-       * API exposes an engine_make grouping, wire it up the same way Make
-       * is wired (see makeCounts / filteredMakes above). ── */}
+      {/* ── Vehicle Make Modal — group_by=vehicle_make (chassis/engine
+       * manufacturer, e.g. Fiat, Mercedes-Benz, Iveco), same pattern as the
+       * Make modal but single-level (no model sub-view). ── */}
       {openModal === "engineMake" && (
         <div className="filter-overlay">
           <div className="filter-modal">
             <div className="filter-header">
-              <h3> Vehicle Make</h3>
+              <h3>Vehicle Make</h3>
               {closeBtn}
             </div>
+            <div className="filter-search-bar">
+              <div className="loc-search-wrap" style={{ marginBottom:0 }}>
+                <i className="bi bi-search loc-search-icon" />
+                <input className="loc-search-input" type="text"
+                  placeholder="Search vehicle make"
+                  value={engineMakeSearch}
+                  onChange={e => setEngineMakeSearch(e.target.value)}
+                />
+              </div>
+            </div>
             <div className="filter-body">
-              <p style={{ color:"#888", padding:"24px 4px" }}> Vehicle Make filtering is coming soon.</p>
+              <ul className="loc-state-list">
+                {filteredVehicleMakes.length === 0 ? (
+                  <li className="loc-state-item" style={{ color:"#888" }}>No vehicle makes found</li>
+                ) : (
+                  filteredVehicleMakes.map(m => {
+                    const isSelected = tempEngineMake === m.slug;
+                    return (
+                      <li key={m.slug} className={`loc-state-item${isSelected ? " selected" : ""}`}
+                        onClick={() => setTempEngineMake(isSelected ? null : m.slug)}>
+                        <span className={`loc-checkbox${isSelected ? " checked" : ""}`}>
+                          {isSelected && <i className="bi bi-check" style={{ color:"#fff", fontSize:14, lineHeight:1 }} />}
+                        </span>
+                        <span className="loc-state-name">{m.name}</span>
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
             </div>
             <div className="filter-footer">
               <button className="clear" onClick={handleEngineMakeClear} style={{ opacity:tempEngineMake?1:0.4, cursor:tempEngineMake?"pointer":"not-allowed" }}>Clear filters</button>

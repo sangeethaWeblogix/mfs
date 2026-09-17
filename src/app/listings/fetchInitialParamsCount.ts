@@ -11,25 +11,31 @@ export type InitialParamsCount = {
   state: { name: string; slug: string; count: number; region?: { name: string; slug: string; count: number }[] }[];
 };
 
-export async function fetchInitialParamsCount(): Promise<InitialParamsCount | null> {
+// The live WP endpoint (params-count, hyphenated) only accepts a single
+// group_by value per call — "make,condition,state" 400s with "Invalid
+// group_by value" — so make and state are fetched separately and merged.
+async function fetchGroupBy(groupBy: string): Promise<any[]> {
   try {
-    const res = await fetch(`${API_BASE}/params_count?group_by=make,condition,state`, {
+    const res = await fetch(`${API_BASE}/params-count?group_by=${groupBy}`, {
       headers: {
         Accept: "application/json",
         ...(API_KEY && { "X-Secret-Key": API_KEY }),
       },
       cache: "no-store",
     });
-    if (!res.ok) return null;
+    if (!res.ok) return [];
 
     const raw = await res.text();
     const idx = raw.indexOf('{"');
     const json = JSON.parse(idx > 0 ? raw.substring(idx) : raw);
-    const data = json?.data;
-    if (!data) return null;
-
-    return { make: data.make ?? [], state: data.state ?? [] };
+    return json?.data ?? [];
   } catch {
-    return null;
+    return [];
   }
+}
+
+export async function fetchInitialParamsCount(): Promise<InitialParamsCount | null> {
+  const [make, state] = await Promise.all([fetchGroupBy("make"), fetchGroupBy("state")]);
+  if (!make.length && !state.length) return null;
+  return { make, state };
 }

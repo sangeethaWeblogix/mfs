@@ -27,8 +27,9 @@ function buildApiParams(filters: FilterState, seed: number, perPage = 24): URLSe
   if (filters.region)             params.set("region",            String(filters.region));
   if (filters.category)           params.set("category",          String(filters.category));
   if (filters.condition)          params.set("condition",         String(filters.condition));
-  if (filters.make)               params.set("make",              String(filters.make));
+  if (filters.make)               params.set("motorhome_make",    String(filters.make));
   if (filters.model)              params.set("model",             String(filters.model));
+  if (filters.engine_make)        params.set("vehicle_make",      String(filters.engine_make));
   if (filters.suburb)             params.set("suburb",            String(filters.suburb));
   if (filters.pincode)            params.set("pincode",           String(filters.pincode));
   if (filters.from_price)         params.set("from_price",        String(filters.from_price));
