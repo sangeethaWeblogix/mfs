@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import Image from "next/image";
 
@@ -27,40 +27,35 @@ const MINOR_CITIES = [
 const FILTERS = [
   {
     icon: <Image src="/images/Budget.png" alt="Budget" width={24} height={24} unoptimized />,
-    label: "By Your Budget",
+    label: "By Price",
     items: [
-      { text: "Under $30,000",       href: "/listings/under-30000/" },
-      { text: "$30,000 – $40,000",   href: "/listings/between-30000-40000/" },
-      { text: "$40,000 – $50,000",   href: "/listings/between-40000-50000/" },
-      { text: "$50,000 – $70,000",   href: "/listings/between-50000-70000/" },
-      { text: "$70,000 – $80,000",   href: "/listings/between-70000-80000/" },
-      { text: "$80,000 – $100,000",  href: "/listings/between-80000-100000/" },
-      { text: "Over $100,000",       href: "/listings/over-100000/" }, 
+      { text: "Under $100,000",       href: "/listings/under-100000/" },
+      { text: "$100,000 – $150,000",  href: "/listings/between-100000-150000/" },
+      { text: "$150,000 – $200,000",  href: "/listings/between-150000-200000/" },
+      { text: "$200,000 – $300,000",  href: "/listings/between-200000-300000/" },
+      { text: "Over $300,000",        href: "/listings/over-300000/" },
     ],
   },
   {
     icon: <Image src="/images/ATM.png" alt="Weight GVM" width={24} height={24} unoptimized />,
     label: " By Weight (GVM)",
     items: [
-      { text: "Under 1500kg", href: "/listings/under-1500-kg-gvm/" },
-      { text: "Under 2000kg", href: "/listings/under-2000-kg-gvm/" },
-      { text: "Under 2500kg", href: "/listings/under-2500-kg-gvm/" },
-      { text: "Under 3000kg", href: "/listings/under-3000-kg-gvm/" },
-       
-      { text: "Over 3000kg",  href: "/listings/over-3000-kg-gvm/" },
-       
+      { text: "Under 3,500kg",         href: "/listings/under-3500-kg-gvm/" },
+      { text: "3,500kg – 4,500kg",     href: "/listings/between-3500-kg-4500-kg-gvm/" },
+      { text: "4,500kg – 6,000kg",     href: "/listings/between-4500-kg-6000-kg-gvm/" },
+      { text: "6,000kg – 8,000kg",     href: "/listings/between-6000-kg-8000-kg-gvm/" },
+      { text: "Over 8,000kg",          href: "/listings/over-8000-kg-gvm/" },
     ],
   },
   {
     icon: <Image src="/images/Length.png" alt="Length" width={24} height={24} unoptimized />,
     label: "By Size (Length)",
     items: [
-      
-      { text: "Under 16ft",     href: "/listings/under-16-length-in-feet/" },
-      { text: "16ft – 18ft",    href: "/listings/between-16-18-length-in-feet/" },
-      { text: "18ft – 20ft",    href: "/listings/between-18-20-length-in-feet/" },
-      { text: "20ft – 22ft",    href: "/listings/between-20-22-length-in-feet/" },
-      { text: "Over 22ft",      href: "/listings/over-22-length-in-feet/" },
+      { text: "Under 20ft",     href: "/listings/under-20-length-in-feet/" },
+      { text: "20ft – 23ft",    href: "/listings/between-20-23-length-in-feet/" },
+      { text: "23ft – 26ft",    href: "/listings/between-23-26-length-in-feet/" },
+      { text: "26ft – 30ft",    href: "/listings/between-26-30-length-in-feet/" },
+      { text: "Over 30ft",      href: "/listings/over-30-length-in-feet/" },
     ],
   },
   {

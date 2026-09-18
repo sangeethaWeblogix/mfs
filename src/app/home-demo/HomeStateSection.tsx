@@ -79,7 +79,7 @@ export default function HomeStateSection({ stateBands }: Props) {
                           <div className="info">
                             <div className="quick_linkss">
                               <p>{item.display_text}</p>
-                              <a className="view_all" href={`/listings${item.permalink}/`}>
+                              <a className="view_all" href={`${item.permalink}`}>
                                 View All Motorhomes for Sale in {meta.code}{" "}
                                 <i className="bi bi-chevron-right" />
                               </a>

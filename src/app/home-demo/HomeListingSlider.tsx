@@ -30,6 +30,13 @@ interface Props {
   badgeVariant: "new" | "used";
 }
 
+function formatPrice(p: string | number | null | undefined): string {
+  if (p === null || p === undefined || p === "") return "POA";
+  const n = typeof p === "number" ? p : Number(String(p).replace(/[^0-9.]/g, ""));
+  if (isNaN(n) || n === 0) return typeof p === "string" ? p : "POA";
+  return `$${n.toLocaleString("en-US")}`;
+}
+
 export default function HomeListingSlider({ title, viewAllHref, items, badgeVariant }: Props) {
   const swiperRef = useRef<SwiperType | null>(null);
   const [isBeginning, setIsBeginning] = useState(true);
@@ -76,7 +83,7 @@ export default function HomeListingSlider({ title, viewAllHref, items, badgeVari
             }}
           >
             {items.map((item, idx) => {
-              const price = item.sale_price || item.regular_price || "POA";
+              const price = formatPrice(item.sale_price || item.regular_price);
               const image = item.image_format?.[0] ?? null;
               const type = (item.categories?.[0] ?? "").replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
               const location = getLocationLabel(item);
