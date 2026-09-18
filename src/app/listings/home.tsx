@@ -11,7 +11,7 @@ import { normalizeListing } from "./listingShared";
 import StateBrowseSection from "./StateBrowseSection";
 import type { BrowseSectionData } from "./browseSectionShared";
 import StateContent from "./StateContent";
-import { buildApiUrl, buildListingsSlug, buildFilterBreadcrumbs } from "./urlUtils";
+import { buildApiUrl, buildListingsSlug, buildFilterBreadcrumbs, parseDemoFilters } from "./urlUtils";
 import { seededShuffle } from "./seededShuffle";
 import type { InitialParamsCount } from "./fetchInitialParamsCount";
 // import { useBanners } from "@/components/BannerHandler";
@@ -300,6 +300,19 @@ export default function StateHome({
         setPage(1);
       }
       setMaxPages(1);
+
+      // Browser back/forward changes the URL without going through
+      // handleFilterChange/pushFiltersToUrl, so `filters` state was never
+      // re-synced — the page kept showing whatever filters were active
+      // right before the user navigated away (e.g. to a product page),
+      // even though the address bar now shows a different filter combo.
+      const slugParts = window.location.pathname
+        .replace(/^\/listings\/?/, "")
+        .split("/")
+        .filter(Boolean);
+      const query: Record<string, string> = {};
+      new URLSearchParams(window.location.search).forEach((v, k) => { query[k] = v; });
+      setFilters(parseDemoFilters(slugParts, query));
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -379,13 +392,16 @@ export default function StateHome({
       const seoData = (json as any)?.seo_v2;
       if (seoData) setSeo(seoData);
 
-      const featuredRaw: Listing[]   = ((json as any)?.featured_products  ?? []).map(normalizeListing);
-      const newRaw: Listing[]        = ((json as any)?.new_products       ?? []).map(normalizeListing);
-      const usedRaw: Listing[]       = ((json as any)?.used_products      ?? []).map(normalizeListing);
+      // Some filter combos return one flat `products` array instead of the
+      // featured/new/used split — treat it as an already-combined pool.
+      const hasFlatProducts = Array.isArray((json as any)?.products);
+      const featuredRaw: Listing[]   = hasFlatProducts ? ((json as any).products as any[]).map(normalizeListing) : ((json as any)?.featured_products  ?? []).map(normalizeListing);
+      const newRaw: Listing[]        = hasFlatProducts ? [] : ((json as any)?.new_products       ?? []).map(normalizeListing);
+      const usedRaw: Listing[]       = hasFlatProducts ? [] : ((json as any)?.used_products      ?? []).map(normalizeListing);
       const premiumsRaw: Listing[]   = ((json as any)?.premium_products   ?? []).map(normalizeListing);
       const exclusivesRaw: Listing[] = ((json as any)?.exclusive_products ?? []).map(normalizeListing);
 
-      if (isIndexed) {
+      if (isIndexed && !hasFlatProducts) {
         const featuredItems = buildFeaturedOrder(featuredRaw, premiumsRaw, exclusivesRaw);
         setPool({ featured: featuredItems, new: newRaw, used: usedRaw });
       } else {
@@ -467,13 +483,18 @@ export default function StateHome({
         const seoData = json?.seo_v2;
         if (seoData) setSeo(seoData);
 
-        const featuredRaw: Listing[]   = (json?.featured_products  ?? []).map(normalizeListing);
-        const newRaw: Listing[]        = (json?.new_products       ?? []).map(normalizeListing);
-        const usedRaw: Listing[]       = (json?.used_products      ?? []).map(normalizeListing);
+        // Some filter combos (e.g. condition=New) return one flat `products`
+        // array instead of the featured/new/used split — without this check
+        // featuredRaw/newRaw/usedRaw all come back empty and only the
+        // premium/exclusive hero picks render.
+        const hasFlatProducts = Array.isArray(json?.products);
+        const featuredRaw: Listing[]   = hasFlatProducts ? (json.products as any[]).map(normalizeListing) : (json?.featured_products  ?? []).map(normalizeListing);
+        const newRaw: Listing[]        = hasFlatProducts ? [] : (json?.new_products       ?? []).map(normalizeListing);
+        const usedRaw: Listing[]       = hasFlatProducts ? [] : (json?.used_products      ?? []).map(normalizeListing);
         const premiumsRaw: Listing[]   = (json?.premium_products   ?? []).map(normalizeListing);
         const exclusivesRaw: Listing[] = (json?.exclusive_products ?? []).map(normalizeListing);
 
-        if (isIndexed) {
+        if (isIndexed && !hasFlatProducts) {
           // Indexed pages show Featured/New/Used as separate grids — the pool
           // endpoint already segments products into these buckets.
           // seededShuffle reorders each bucket using the client's random seed so
@@ -641,10 +662,10 @@ export default function StateHome({
                 <Link href="/">Home</Link>
                 <svg width="12" height="20" viewBox="0 0 24 24" fill="none" stroke="#3e3e3e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, display: "block" }} aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
                 <Link href="/listings/">Motorhomes for Sale</Link>
-                {buildFilterBreadcrumbs(filters).map((crumb) => (
+                {buildFilterBreadcrumbs(filters).map((crumb, i, arr) => (
                   <span key={crumb.href}>
                     <svg width="12" height="20" viewBox="0 0 24 24" fill="none" stroke="#3e3e3e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, display: "block" }} aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
-                    <Link href={crumb.href}>{crumb.label}</Link>
+                    {i === arr.length - 1 ? <span aria-current="page">{crumb.label}</span> : <Link href={crumb.href}>{crumb.label}</Link>}
                   </span>
                 ))}
               </nav>
@@ -781,10 +802,10 @@ export default function StateHome({
               <Link href="/">Home</Link>
               <svg width="12" height="20" viewBox="0 0 24 24" fill="none" stroke="#3e3e3e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, display: "block" }} aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
               <Link href="/listings/">Motorhomes for Sale</Link>
-              {buildFilterBreadcrumbs(filters).map((crumb) => (
+              {buildFilterBreadcrumbs(filters).map((crumb, i, arr) => (
                 <span key={crumb.href}>
                   <svg width="12" height="20" viewBox="0 0 24 24" fill="none" stroke="#3e3e3e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, display: "block" }} aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
-                  <Link href={crumb.href}>{crumb.label}</Link>
+                  {i === arr.length - 1 ? <span aria-current="page">{crumb.label}</span> : <Link href={crumb.href}>{crumb.label}</Link>}
                 </span>
               ))}
             </nav>
@@ -877,10 +898,10 @@ export default function StateHome({
             <Link href="/">Home</Link>
             <svg width="10" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
             <Link href="/listings/">Motorhomes for Sale</Link>
-            {buildFilterBreadcrumbs(filters).map((crumb) => (
+            {buildFilterBreadcrumbs(filters).map((crumb, i, arr) => (
               <span key={crumb.href}>
                 <svg width="10" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
-                <Link href={crumb.href}>{crumb.label}</Link>
+                {i === arr.length - 1 ? <span aria-current="page">{crumb.label}</span> : <Link href={crumb.href}>{crumb.label}</Link>}
               </span>
             ))}
           </nav>

@@ -152,7 +152,7 @@
            </div>
  
            {/* CTA — inside wrapper so it attaches seamlessly to card bottom */}
-           <a href="https://seller.motorhomesforsale.com.au/seller-signup/" className="demo-hero__cta">
+           <a className="demo-hero__cta" aria-disabled="true" tabIndex={-1} style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }}>
              List Your Motorhome Now <i className="fa-solid fa-arrow-right" />
            </a>
            </div>{/* end demo-price-wrapper */}
@@ -269,7 +269,7 @@
                    </li>
                  ))}
                </ul>
-               <a href="https://seller.motorhomesforsale.com.au/seller-signup/" className="demo-reach-card__cta">
+               <a className="demo-reach-card__cta" aria-disabled="true" tabIndex={-1} style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }}>
                  List My Motorhome Now <i className="fa-solid fa-arrow-right" />
                </a>
              </div>
@@ -472,7 +472,7 @@
              Start selling your motorhome today for just{" "}
              <strong>$49 (Inc. GST)</strong> — Live until sold!
            </p>
-           <a href="https://seller.motorhomesforsale.com.au/seller-signup/" className="btn white_btn">
+           <a className="btn white_btn" aria-disabled="true" tabIndex={-1} style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }}>
              List Your Motorhome Now
            </a>
          </div>

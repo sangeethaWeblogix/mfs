@@ -11,11 +11,12 @@ const AUS_ABBR: Record<string, string> = {
 
 const toTitleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
 
-/** home_featured always returns location: "" — derive a label from state
- *  (e.g. "victoria" → "VIC") instead, same as the rest of the site. */
+/** Always show just the state (e.g. "victoria" → "VIC"), same as the rest of
+ *  the site — home_featured's `location` field is a suburb/region/state
+ *  join (e.g. "Brisbane, Queensland") and shouldn't be shown as-is. Only
+ *  falls back to it when an item has no state at all. */
 export function getLocationLabel(item: { location?: string; state?: string }): string {
-  if (item.location) return item.location;
   const stateName = item.state?.replace(/-/g, " ") ?? "";
-  if (!stateName) return "";
+  if (!stateName) return item.location ?? "";
   return AUS_ABBR[stateName.toUpperCase()] ?? toTitleCase(stateName);
 }

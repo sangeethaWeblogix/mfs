@@ -59,11 +59,22 @@ function buildApiParams(filters: FilterState, seed: number, perPage = 24): URLSe
  */
 function parsePoolJson(json: any, isIndexed: boolean, displaySeed: number): InitialPool | null {
   const seo: SeoV2 | null = json?.seo_v2 ?? null;
-  const featuredRaw: Listing[]   = (json?.featured_products  ?? []).map(normalizeListing);
-  const newRaw: Listing[]        = (json?.new_products       ?? []).map(normalizeListing);
-  const usedRaw: Listing[]       = (json?.used_products       ?? []).map(normalizeListing);
   const premiumsRaw: Listing[]   = (json?.premium_products   ?? []).map(normalizeListing);
   const exclusivesRaw: Listing[] = (json?.exclusive_products ?? []).map(normalizeListing);
+
+  // Some filter combos (e.g. condition=New) make the backend return one flat
+  // `products` array instead of the featured/new/used split — the same shape
+  // page 2+ pagination already had to handle (see StateListingGrid's
+  // self-fetch mode). Without this check, featuredRaw/newRaw/usedRaw all come
+  // back empty and only the premium/exclusive hero picks render, dropping
+  // every "regular" listing even though the real total (in pagination/counts)
+  // is unaffected.
+  const hasFlatProducts = Array.isArray(json?.products);
+  const featuredRaw: Listing[] = hasFlatProducts
+    ? (json.products as any[]).map(normalizeListing)
+    : (json?.featured_products ?? []).map(normalizeListing);
+  const newRaw: Listing[]  = hasFlatProducts ? [] : (json?.new_products  ?? []).map(normalizeListing);
+  const usedRaw: Listing[] = hasFlatProducts ? [] : (json?.used_products ?? []).map(normalizeListing);
 
   if (!featuredRaw.length && !newRaw.length && !usedRaw.length && !premiumsRaw.length) return null;
 
@@ -75,7 +86,7 @@ function parsePoolJson(json: any, isIndexed: boolean, displaySeed: number): Init
   let newItems: Listing[]  = [];
   let usedItems: Listing[] = [];
 
-  if (isIndexed) {
+  if (isIndexed && !hasFlatProducts) {
     featured = buildFeaturedOrder(seededShuffle(featuredRaw, displaySeed), premiumsRaw, exclusivesRaw);
     newItems  = seededShuffle(newRaw, displaySeed + 1000);
     usedItems = seededShuffle(usedRaw, displaySeed + 2000);

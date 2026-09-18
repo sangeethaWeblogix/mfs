@@ -1,22 +1,28 @@
    import { NextResponse } from "next/server";
- 
+
  const SITE_URL =
    process.env.NEXT_PUBLIC_SITE_URL ||
    "https://www.motorhomesforsale.com.au/listings/";
-     const API_KEY = process.env.MFS_API_KEY; // ✅ Added
+     const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
+     const API_KEY = process.env.MFS_API_KEY;
 
- 
+
  export async function GET() {
    try {
+     // The old cfs/v1/sitemap/makes endpoint (legacy host) rejects every
+     // request with a 401 regardless of the key sent, even though sibling
+     // sitemap endpoints on that same host work fine — this is the new
+     // backend's replacement route.
      const res = await fetch(
-       "https://admin.motorhomesforsale.com.au/wp-json/cfs/v1/sitemap/makes",
+       `${API_BASE}/sitemap/makes?min_count=1&bust_cache=0`,
         {
         headers: {
           Accept: "application/json",
-          ...(API_KEY && { "X-Secret-Key": API_KEY }), // ✅ Added
+          ...(API_KEY && { "X-Secret-Key": API_KEY }),
         },
+        cache: "no-store",
       }
-      
+
      );
  
      const data = await res.json();

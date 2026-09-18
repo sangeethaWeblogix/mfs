@@ -1,33 +1,32 @@
     import { NextResponse } from "next/server";
-      const API_KEY = process.env.MFS_API_KEY; // ✅ Added
 
-  
+
   const SITE_URL =
     process.env.NEXT_PUBLIC_SITE_URL ||
     "https://www.motorhomesforsale.com.au/listings/";
-  
+
+  // The old cfs/v1/sitemap/price endpoint (legacy host) always 401s regardless
+  // of key — same backend bug as makes/weights sitemaps. The new host's
+  // equivalent only returns buckets with current live matches, not this full
+  // canonical range, so this replicates the exact 42 URLs already published
+  // at https://www.motorhomesforsale.com.au/prices-sitemap.xml.
+  const PRICE_PATHS = [
+    "under-20000/", "under-30000/", "under-40000/", "under-50000/", "under-60000/",
+    "under-70000/", "under-80000/", "under-90000/", "under-100000/", "under-125000/",
+    "under-150000/", "under-175000/", "under-200000/",
+    "between-20000-30000/", "between-30000-40000/", "between-40000-50000/", "between-50000-60000/",
+    "between-60000-70000/", "between-70000-80000/", "between-80000-90000/", "between-90000-100000/",
+    "between-100000-125000/", "between-125000-150000/", "between-150000-175000/", "between-175000-200000/",
+    "over-20000/", "over-30000/", "over-40000/", "over-50000/", "over-60000/",
+    "over-70000/", "over-80000/", "over-90000/", "over-100000/", "over-125000/",
+    "over-150000/", "over-175000/", "over-200000/",
+    "between-100000-150000/", "between-150000-200000/", "between-200000-300000/",
+    "over-300000/",
+  ];
+
   export async function GET() {
     try {
-      const res = await fetch(
-        "https://admin.motorhomesforsale.com.au/wp-json/cfs/v1/sitemap/price",
-         {
-        headers: {
-          Accept: "application/json",
-          ...(API_KEY && { "X-Secret-Key": API_KEY }), // ✅ Added
-        },
-      }
-       
-      );
-  
-      const data = await res.json();
-  
-      if (!data?.success || !Array.isArray(data.paths)) {
-        throw new Error("Invalid sitemap API response");
-      }
-  
-      
-  
-      const urls = data.paths
+      const urls = PRICE_PATHS
         .map(
           (path: string) => `
     <url>

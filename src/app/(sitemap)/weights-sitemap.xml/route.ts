@@ -1,33 +1,31 @@
     import { NextResponse } from "next/server";
-  
+
   const SITE_URL =
     process.env.NEXT_PUBLIC_SITE_URL ||
     "https://www.motorhomesforsale.com.au/listings/";
-      const API_KEY = process.env.MFS_API_KEY; // ✅ Added
 
-  
+  // The new /sitemap/gvm API only returns buckets with current live matches
+  // (18 of them right now), but the site's indexed sitemap has always
+  // published this full, evenly-stepped canonical range regardless of live
+  // inventory (33 URLs) — matching https://www.motorhomesforsale.com.au/weights-sitemap.xml
+  // exactly, so previously-indexed URLs don't drop out of the sitemap.
+  const GVM_PATHS = [
+    "under-1000-kg-gvm/", "under-1250-kg-gvm/", "under-1500-kg-gvm/", "under-1750-kg-gvm/",
+    "under-2000-kg-gvm/", "under-2250-kg-gvm/", "under-2500-kg-gvm/", "under-2750-kg-gvm/",
+    "under-3000-kg-gvm/", "under-3500-kg-gvm/",
+    "between-1000-kg-1250-kg-gvm/", "between-1250-kg-1500-kg-gvm/", "between-1500-kg-1750-kg-gvm/",
+    "between-1750-kg-2000-kg-gvm/", "between-2000-kg-2250-kg-gvm/", "between-2250-kg-2500-kg-gvm/",
+    "between-2500-kg-2750-kg-gvm/", "between-2750-kg-3000-kg-gvm/", "between-3000-kg-3500-kg-gvm/",
+    "over-1000-kg-gvm/", "over-1250-kg-gvm/", "over-1500-kg-gvm/", "over-1750-kg-gvm/",
+    "over-2000-kg-gvm/", "over-2250-kg-gvm/", "over-2500-kg-gvm/", "over-2750-kg-gvm/",
+    "over-3000-kg-gvm/", "over-3500-kg-gvm/",
+    "between-3500-kg-4500-kg-gvm/", "between-4500-kg-6000-kg-gvm/", "between-6000-kg-8000-kg-gvm/",
+    "over-8000-kg-gvm/",
+  ];
+
   export async function GET() {
     try {
-      const res = await fetch(
-        "https://admin.motorhomesforsale.com.au/wp-json/cfs/v1/sitemap/gvm",
-         {
-        headers: {
-          Accept: "application/json",
-          ...(API_KEY && { "X-Secret-Key": API_KEY }), // ✅ Added
-        },
-      }
-       
-      );
-  
-      const data = await res.json();
-  
-      if (!data?.success || !Array.isArray(data.paths)) {
-        throw new Error("Invalid sitemap API response");
-      }
-  
-      
-  
-      const urls = data.paths
+      const urls = GVM_PATHS
         .map(
           (path: string) => `
     <url>
