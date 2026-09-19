@@ -160,6 +160,13 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
   const [tempEngineMake, setTempEngineMake] = useState<string | null>(null);
   const [engineMakeSearch, setEngineMakeSearch] = useState("");
   const [vehicleMakeCounts, setVehicleMakeCounts] = useState<{name: string; slug: string; count: number}[]>([]);
+  // Custom Built has no real "model" data (its Model breakdown returns
+  // chassis names like "Crafter"/"Sprinter" instead of actual model names),
+  // so the Make & Model modal shows its Vehicle Make breakdown there instead —
+  // sharing tempEngineMake with the standalone Vehicle Make filter so a
+  // selection here also reflects there once applied.
+  const [customBuiltVehicleMakes, setCustomBuiltVehicleMakes] = useState<{name: string; slug: string; count: number}[]>([]);
+  const CUSTOM_BUILT_SLUG = "custom-built";
   const [stateCounts,      setStateCounts]      = useState<{name?: string; slug: string; count: number; region?: {name: string; slug: string; count: number}[]}[]>([]);
   const [regionCountsByState, setRegionCountsByState] = useState<Record<string, {name: string; slug: string; count: number}[]>>({});
   const [lastModelName,    setLastModelName]    = useState<string | null>(null);
@@ -258,17 +265,24 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
   // via group_by=model&motorhome_make=<slug>), so it's fetched on demand
   // whenever the selected make changes.
   useEffect(() => {
-    if (!tempMake) { setModelCounts([]); return; }
+    if (!tempMake) { setModelCounts([]); setCustomBuiltVehicleMakes([]); return; }
+    const isCustomBuilt = tempMake === CUSTOM_BUILT_SLUG;
     const controller = new AbortController();
-    const params = new URLSearchParams({ motorhome_make: tempMake, group_by: "model" });
+    const params = new URLSearchParams({ motorhome_make: tempMake, group_by: isCustomBuilt ? "vehicle_make" : "model" });
     fetch(obfuscateUrl(`/api/d2/?${params.toString()}`), { signal: controller.signal })
       .then(r => parseObfuscatedResponse(r))
       .then(json => {
         if (controller.signal.aborted) return;
-        const data = json?.data?.model ?? [];
-        setModelCounts(data);
-        const matched = data.find((m: {slug: string; name: string}) => m.slug === currentFilters.model);
-        if (matched) setLastModelName(matched.name);
+        if (isCustomBuilt) {
+          setModelCounts([]);
+          setCustomBuiltVehicleMakes(json?.data?.vehicle_make ?? []);
+        } else {
+          const data = json?.data?.model ?? [];
+          setModelCounts(data);
+          setCustomBuiltVehicleMakes([]);
+          const matched = data.find((m: {slug: string; name: string}) => m.slug === currentFilters.model);
+          if (matched) setLastModelName(matched.name);
+        }
       })
       .catch(e => { if (e.name !== "AbortError") console.error(e); });
     return () => controller.abort();
@@ -474,6 +488,21 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
       })()
     : vehicleMakeCounts.slice().sort((a, b) => a.name.localeCompare(b.name));
 
+  // Custom Built's Vehicle Make list inside the Make & Model modal — shares
+  // the modelSearch box (same UI slot the Model list would otherwise use).
+  const filteredCustomBuiltVehicleMakes = modelSearch
+    ? (() => {
+        const q = modelSearch.toLowerCase();
+        return customBuiltVehicleMakes
+          .filter(m => m.name.toLowerCase().includes(q))
+          .sort((a, b) => {
+            const an = a.name.toLowerCase(), bn = b.name.toLowerCase();
+            const rank = (n: string) => n.startsWith(q) ? 0 : n.includes(` ${q}`) ? 1 : 2;
+            return rank(an) - rank(bn);
+          });
+      })()
+    : customBuiltVehicleMakes.slice().sort((a, b) => a.name.localeCompare(b.name));
+
   /* ── Core update fn ── */
   const updateFiltersAndURL = (updates: Partial<FilterState>) => {
     const merged: FilterState = { ...currentFilters, ...updates };
@@ -513,13 +542,31 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
   const handleSleepClear  = () => { setTempSleepFrom(null); setTempSleepTo(null); updateFiltersAndURL({ from_sleep: undefined, to_sleep: undefined }); setOpenModal(null); };
 
   /* ── Make ── */
-  const handleMakeOpen = () => { setTempMake(currentFilters.make ?? null); setTempModel(currentFilters.model ?? null); setMakeSearch(""); setModelSearch(""); setMakeSubView("makes"); setOpenModal("make"); };
-  const handleMakeSearch = () => { updateFiltersAndURL({ make: tempMake ?? undefined, model: tempModel ?? undefined }); setOpenModal(null); };
-  const handleMakeClear  = () => { setTempMake(null); setTempModel(null); updateFiltersAndURL({ make: undefined, model: undefined }); setOpenModal(null); };
+  const handleMakeOpen = () => {
+    setTempMake(currentFilters.make ?? null);
+    setTempModel(currentFilters.model ?? null);
+    setTempEngineMake(currentFilters.engine_make ?? null);
+    setMakeSearch(""); setModelSearch(""); setMakeSubView("makes"); setOpenModal("make");
+  };
+  const handleMakeSearch = () => {
+    const isCustomBuilt = tempMake === CUSTOM_BUILT_SLUG;
+    updateFiltersAndURL({
+      make: tempMake ?? undefined,
+      model: isCustomBuilt ? undefined : (tempModel ?? undefined),
+      ...(isCustomBuilt ? { engine_make: tempEngineMake ?? undefined } : {}),
+    });
+    setOpenModal(null);
+  };
+  const handleMakeClear  = () => {
+    const wasCustomBuilt = tempMake === CUSTOM_BUILT_SLUG;
+    setTempMake(null); setTempModel(null); setTempEngineMake(null);
+    updateFiltersAndURL({ make: undefined, model: undefined, ...(wasCustomBuilt ? { engine_make: undefined } : {}) });
+    setOpenModal(null);
+  };
   const handleModelViewOpen = (makeSlug?: string) => {
     const target = makeSlug ?? tempMake;
     if (!target) return;
-    if (makeSlug && makeSlug !== tempMake) { setTempMake(makeSlug); setTempModel(null); }
+    if (makeSlug && makeSlug !== tempMake) { setTempMake(makeSlug); setTempModel(null); setTempEngineMake(null); }
     setModelSearch("");
     setMakeSubView("models");
   };
@@ -1416,7 +1463,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
               {makeSubView === "models" ? (
                 <>
                   <button className="loc-back-btn" onClick={() => setMakeSubView("makes")}><i className="bi bi-chevron-left" /> Motorhome Make</button>
-                  <h3 style={{ position:"absolute", left:"50%", transform:"translateX(-50%)", margin:0 }}>Model</h3>
+                  <h3 style={{ position:"absolute", left:"50%", transform:"translateX(-50%)", margin:0 }}>{tempMake === CUSTOM_BUILT_SLUG ? "Vehicle Make" : "Model"}</h3>
                 </>
               ) : <h3>Motorhome Make &amp; Model</h3>}
               {closeBtn}
@@ -1430,7 +1477,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
               <div className="loc-search-wrap" style={{ marginBottom:0 }}>
                 <i className="bi bi-search loc-search-icon" />
                 <input className="loc-search-input" type="text"
-                  placeholder={makeSubView === "makes" ? "Search motorhome make" : "Search model"}
+                  placeholder={makeSubView === "makes" ? "Search motorhome make" : (tempMake === CUSTOM_BUILT_SLUG ? "Search vehicle make" : "Search model")}
                   value={makeSubView === "makes" ? makeSearch : modelSearch}
                   onChange={e => makeSubView === "makes" ? setMakeSearch(e.target.value) : setModelSearch(e.target.value)}
                 />
@@ -1443,19 +1490,37 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
                     const isSelected = tempMake === m.slug;
                     return (
                       <li key={m.slug} className={`loc-state-item${isSelected ? " selected" : ""}`}
-                        onClick={() => { if (isSelected) { setTempMake(null); setTempModel(null); } else { setTempMake(m.slug); setTempModel(null); } }}>
+                        onClick={() => { if (isSelected) { setTempMake(null); setTempModel(null); setTempEngineMake(null); } else { setTempMake(m.slug); setTempModel(null); setTempEngineMake(null); } }}>
                         <span className={`loc-checkbox${isSelected ? " checked" : ""}`}>
                           {isSelected && <i className="bi bi-check" style={{ color:"#fff", fontSize:14, lineHeight:1 }} />}
                         </span>
                         <span className="loc-state-name">{m.name}</span>
                         {isSelected ? (
-                          <button className="loc-region-pill" onClick={e => { e.stopPropagation(); handleModelViewOpen(m.slug); }}>Model <i className="bi bi-chevron-right" /></button>
+                          <button className="loc-region-pill" onClick={e => { e.stopPropagation(); handleModelViewOpen(m.slug); }}>{m.slug === CUSTOM_BUILT_SLUG ? "Vehicle Make" : "Model"} <i className="bi bi-chevron-right" /></button>
                         ) : (
-                          <button className="loc-arrow-btn" onClick={e => { e.stopPropagation(); setTempMake(m.slug); setTempModel(null); handleModelViewOpen(m.slug); }} aria-label={`View models for ${m.name}`}><i className="bi bi-chevron-right" /></button>
+                          <button className="loc-arrow-btn" onClick={e => { e.stopPropagation(); setTempMake(m.slug); setTempModel(null); setTempEngineMake(null); handleModelViewOpen(m.slug); }} aria-label={`View ${m.slug === CUSTOM_BUILT_SLUG ? "vehicle makes" : "models"} for ${m.name}`}><i className="bi bi-chevron-right" /></button>
                         )}
                       </li>
                     );
                   })}
+                </ul>
+              ) : tempMake === CUSTOM_BUILT_SLUG ? (
+                <ul className="loc-state-list">
+                  {filteredCustomBuiltVehicleMakes.length === 0 ? (
+                    <li className="loc-state-item" style={{ color:"#888" }}>No vehicle makes found</li>
+                  ) : (
+                    filteredCustomBuiltVehicleMakes.map(m => {
+                      const isSelected = tempEngineMake === m.slug;
+                      return (
+                        <li key={m.slug} className={`loc-state-item${isSelected ? " selected" : ""}`} onClick={() => setTempEngineMake(isSelected ? null : m.slug)}>
+                          <span className={`loc-checkbox${isSelected ? " checked" : ""}`}>
+                            {isSelected && <i className="bi bi-check" style={{ color:"#fff", fontSize:14, lineHeight:1 }} />}
+                          </span>
+                          <span className="loc-state-name">{m.name}</span>
+                        </li>
+                      );
+                    })
+                  )}
                 </ul>
               ) : (
                 <ul className="loc-state-list">

@@ -117,10 +117,15 @@ function normalizeProductDetail(raw: any) {
   if (raw?.data?.product_details) return raw;
   if (!raw?.title && !raw?.slug) return raw;
 
+  // Custom Built has no real model — its "model" field is actually the
+  // chassis name (e.g. "Sprinter"), already shown via Vehicle Make, so it's
+  // redundant/confusing to also show as "Model" here.
+  const isCustomBuilt = raw.make?.slug === "custom-built";
+
   const attribute_urls = [
     attr("Make", raw.make?.name),
     attr(" Vehicle Make", raw.engine_make),
-    attr("Model", raw.model?.name),
+    attr("Model", isCustomBuilt ? null : raw.model?.name),
     attr("Years", raw.year),
     attr("Conditions", raw.condition),
     attr("RV Class", raw.category?.[0]),

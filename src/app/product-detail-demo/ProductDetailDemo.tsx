@@ -325,6 +325,7 @@ export default function ProductDetailDemo({ data, similarData }: Props) {
     if (apiUrl) return linkFromApiUrl(apiUrl, v).href;
     if (L === "type" || L === "category") return v ? `/listings/${slugify(v.replace(/\s*caravans?\s*/gi, " ").trim())}-category/` : "";
     if (L === "make") return v ? `/listings/${slugify(v)}/` : "";
+    if (L.trim() === "vehicle make") return v ? `/listings/${slugify(v)}-vehicle-make/` : "";
     if (L === "model") { const mk = pickFull("Make"); const mkSlug = mk.url?.trim().replace(/^\/+|\/+$/g, "") || slugify(mk.value); return v ? `/listings/${mkSlug}/${slugify(v)}/` : ""; }
     if (L === "condition" || L === "conditions") return v ? `/listings/${slugify(v)}-condition/` : "";
     if (L === "sleeping capacity" || L === "sleep" || L === "sleeps") { const n = toInt(v); return n ? `/listings/under-${n}-people-sleeping-capacity/` : ""; }
