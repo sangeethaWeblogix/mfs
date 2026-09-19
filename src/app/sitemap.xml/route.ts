@@ -14,9 +14,15 @@ const DEFAULT_SITEMAPS = [
   "makes-sitemap.xml",
   "blogs-sitemap.xml",
   "models-sitemap.xml",
+  "vehicle-makes-sitemap.xml",
+  "state-make-sitemap.xml",
+  "region-make-sitemap.xml",
+  "state-vehicle-make-sitemap.xml",
+  "region-vehicle-make-sitemap.xml",
   "weights-sitemap.xml",
   "prices-sitemap.xml",
   "length-sitemap.xml",
+  "attributes-others-sitemap.xml",
 ];
 
 // Maps the API's sitemap keys to this app's actual `*-sitemap.xml` route
@@ -25,15 +31,15 @@ const DEFAULT_SITEMAPS = [
 const SITEMAP_KEY_TO_FILE: Record<string, string> = {
   base: "general-sitemap.xml",
   listings: "listings-sitemap.xml",
-  categories: "categories-sitemap.xml",
   states: "states-sitemap.xml",
   regions: "regions-sitemap.xml",
   makes: "makes-sitemap.xml",
   models: "models-sitemap.xml",
+  "vehicle-makes": "vehicle-makes-sitemap.xml",
   "state-make": "state-make-sitemap.xml",
   "region-make": "region-make-sitemap.xml",
-  "category-state": "category-state-sitemap.xml",
-  "category-region": "category-region-sitemap.xml",
+  "state-vehicle-make": "state-vehicle-make-sitemap.xml",
+  "region-vehicle-make": "region-vehicle-make-sitemap.xml",
   length: "length-sitemap.xml",
   gvm: "weights-sitemap.xml",
   price: "prices-sitemap.xml",
@@ -58,9 +64,11 @@ async function fetchSitemapList(): Promise<string[]> {
     if (!keys.length) return DEFAULT_SITEMAPS;
 
     const files = keys.map((k) => SITEMAP_KEY_TO_FILE[k]).filter(Boolean) as string[];
-    // "blogs" is WordPress post content, not part of this product-sitemap API —
-    // always included alongside whatever the API reports.
-    return Array.from(new Set([...files, "blogs-sitemap.xml"]));
+    // "blogs" (WordPress posts) and "attributes-others" (Sleeping Capacity +
+    // per-state Price/GVM/Length bands — see that route's own comment) are
+    // not part of this product-sitemap API — always included alongside
+    // whatever the API reports.
+    return Array.from(new Set([...files, "blogs-sitemap.xml", "attributes-others-sitemap.xml"]));
   } catch {
     return DEFAULT_SITEMAPS;
   }

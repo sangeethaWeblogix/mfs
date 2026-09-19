@@ -749,7 +749,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
                   </button>
 
                   <button className={`tag${currentFilters.engine_make ? " active" : ""}`} onClick={handleEngineMakeOpen}>
-                     Vehicle Make
+                     Base Vehicle Make
                     {currentFilters.engine_make && <span className="active_filter"><i className="bi bi-circle-fill" /></span>}
                   </button>
 
@@ -1059,7 +1059,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
 
               {/* Vehicle Make — group_by=vehicle_make (chassis/engine manufacturer) */}
               <div className="filter-item">
-                <h4>Vehicle Make</h4>
+                <h4>Base Vehicle Make</h4>
                 <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
                   <div style={{ flex:1, minWidth:130 }}>
                     <select className="cfs-select-input form-select" value={tempEngineMake ?? ""}
@@ -1557,7 +1557,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
         <div className="filter-overlay">
           <div className="filter-modal">
             <div className="filter-header">
-              <h3>Vehicle Make</h3>
+              <h3>Base Vehicle Make</h3>
               {closeBtn}
             </div>
             <div className="filter-search-bar">

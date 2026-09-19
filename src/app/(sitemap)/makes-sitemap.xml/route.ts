@@ -1,63 +1,11 @@
-   import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { fetchSitemapPaths, buildSitemapXml } from "@/lib/sitemapApi";
 
- const SITE_URL =
-   process.env.NEXT_PUBLIC_SITE_URL ||
-   "https://www.motorhomesforsale.com.au/listings/";
-     const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
-     const API_KEY = process.env.MFS_API_KEY;
+export async function GET() {
+  const paths = await fetchSitemapPaths("makes");
+  const sitemap = buildSitemapXml(paths, "listings");
 
-
- export async function GET() {
-   try {
-     // The old cfs/v1/sitemap/makes endpoint (legacy host) rejects every
-     // request with a 401 regardless of the key sent, even though sibling
-     // sitemap endpoints on that same host work fine — this is the new
-     // backend's replacement route.
-     const res = await fetch(
-       `${API_BASE}/sitemap/makes?min_count=1&bust_cache=0`,
-        {
-        headers: {
-          Accept: "application/json",
-          ...(API_KEY && { "X-Secret-Key": API_KEY }),
-        },
-        cache: "no-store",
-      }
-
-     );
- 
-     const data = await res.json();
- 
-     if (!data?.success || !Array.isArray(data.paths)) {
-       throw new Error("Invalid sitemap API response");
-     }
- 
-     
- 
-     const urls = data.paths
-       .map(
-         (path: string) => `
-   <url>
-     <loc>${SITE_URL}${path}</loc>
-      <lastmod>${new Date().toISOString()}</lastmod>
-            <changefreq>weekly</changefreq>
-       <priority>0.7</priority>
-   </url>`
-       )
-       .join("");
- 
-     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
- <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
- ${urls}
- </urlset>`;
- 
-     return new NextResponse(sitemap, {
-       headers: {
-         "Content-Type": "application/xml; charset=utf-8",
-       },
-     });
-   } catch (error) {
-     console.error("❌ Sitemap error:", error);
-     return new NextResponse("Failed to generate sitemap", { status: 500 });
-   }
- }
- 
+  return new NextResponse(sitemap, {
+    headers: { "Content-Type": "application/xml; charset=utf-8" },
+  });
+}
