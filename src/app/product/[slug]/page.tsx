@@ -106,6 +106,15 @@ function attr(label: string, value: unknown): { label: string; value: string } |
   return { label, value: String(value) };
 }
 
+// tare_mass/payload_weight/gcm come back from the API as strings that
+// already include "Kg" (e.g. "4140 Kg"), unlike gvm which is a plain number —
+// appending " kg" unconditionally doubled up to "4140 Kg kg".
+function withKg(value: unknown): string | null {
+  if (value === null || value === undefined || value === "") return null;
+  const s = String(value).trim();
+  return /kg$/i.test(s) ? s : `${s} kg`;
+}
+
 /**
  * The WP API's product endpoint now returns a flat object (title, make: {name,
  * slug}, numeric regular_price/sale_price, etc.) instead of the nested
@@ -132,10 +141,10 @@ function normalizeProductDetail(raw: any) {
     attr("Length", raw.length != null ? `${raw.length} ft` : null),
     attr("Width", raw.width),
     attr("Height", raw.height),
-    attr("ATM", raw.gvm != null ? `${raw.gvm} kg` : null),
-    attr("Tare Mass", raw.tare_mass != null ? `${raw.tare_mass} kg` : null),
-    attr("Payload Weight", raw.payload_weight != null ? `${raw.payload_weight} kg` : null),
-    attr("GCM", raw.gcm != null ? `${raw.gcm} kg` : null),
+    attr("ATM", withKg(raw.gvm)),
+    attr("Tare Mass", withKg(raw.tare_mass)),
+    attr("Payload Weight", withKg(raw.payload_weight)),
+    attr("GCM", withKg(raw.gcm)),
     attr("Engine Capacity", raw.engine_capacity),
     attr("Fuel Type", raw.fuel_type),
     attr("Transmission", raw.transmission),
