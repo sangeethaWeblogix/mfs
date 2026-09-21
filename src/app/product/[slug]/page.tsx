@@ -115,6 +115,14 @@ function withKg(value: unknown): string | null {
   return /kg$/i.test(s) ? s : `${s} kg`;
 }
 
+// Same issue as withKg — length comes back as a string that already
+// includes "ft" (e.g. "31.92 ft"), so appending " ft" doubled it up.
+function withFt(value: unknown): string | null {
+  if (value === null || value === undefined || value === "") return null;
+  const s = String(value).trim();
+  return /ft$/i.test(s) ? s : `${s} ft`;
+}
+
 /**
  * The WP API's product endpoint now returns a flat object (title, make: {name,
  * slug}, numeric regular_price/sale_price, etc.) instead of the nested
@@ -138,7 +146,7 @@ function normalizeProductDetail(raw: any) {
     attr("Years", raw.year),
     attr("Conditions", raw.condition),
     attr("RV Class", raw.category?.[0]),
-    attr("Length", raw.length != null ? `${raw.length} ft` : null),
+    attr("Length", withFt(raw.length)),
     attr("Width", raw.width),
     attr("Height", raw.height),
     attr("ATM", withKg(raw.gvm)),
