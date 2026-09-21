@@ -97,7 +97,11 @@ function buildAttributesOthersPaths() {
 }
 
 async function main() {
-  const urls = new Set();
+  // The bare /listings/ root isn't part of any of the API_TYPES sitemaps
+  // (it used to only live in general-sitemap.xml, which this script
+  // deliberately doesn't pull from) — without it, the base /listings/ page
+  // gets marked "not indexed" and silently loses its SEO hero/description.
+  const urls = new Set([`${SITE_URL}/listings/`]);
 
   const results = await Promise.all(API_TYPES.map((t) => fetchType(t)));
   results.forEach((paths) => {

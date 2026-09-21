@@ -87,6 +87,10 @@ const BREADCRUMB_PRIORITY: Array<{
     hrefFilters: (f) => ({ make: f.make }),
   },
   {
+    label: (f) => (f.engine_make ? toTitleCase(String(f.engine_make)) : null),
+    hrefFilters: (f) => ({ engine_make: f.engine_make }),
+  },
+  {
     label: (f) => {
       if (!f.from_price && !f.to_price) return null;
       if (f.from_price && f.to_price) return `$${Number(f.from_price).toLocaleString("en-US")} – $${Number(f.to_price).toLocaleString("en-US")}`;
