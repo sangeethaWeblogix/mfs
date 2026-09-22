@@ -117,7 +117,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 height: 80,
                 margin: "0 auto 20px",
                 borderRadius: "50%",
-                backgroundColor: "#22c55e",
+                backgroundColor: "#0099da",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -133,7 +133,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </div>
             <Typography variant="h5" fontWeight="bold" gutterBottom>
               Thank you for submitting your information with{" "}
-              <span style={{ color: "#000" }}>caravansforsale.com.au</span>.
+              <span style={{ color: "#000" }}>motorhomesforsale.com.au</span>.
             </Typography>
 
             <Typography variant="body1" color="text.secondary" gutterBottom>

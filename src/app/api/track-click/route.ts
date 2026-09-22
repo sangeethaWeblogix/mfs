@@ -1,9 +1,10 @@
+import { readObfuscatedBody } from "@/lib/obfuscation";
 const API_KEY = process.env.MFS_API_KEY;
 const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
 
 export async function POST(req: Request) {
   try {
-    const { slug } = await req.json();
+    const { slug } = await readObfuscatedBody<{ slug?: string }>(req);
     if (!slug) return Response.json({ success: false });
 
     await fetch(`${API_BASE}/click?slug=${encodeURIComponent(slug)}`, {

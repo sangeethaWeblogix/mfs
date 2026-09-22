@@ -60,7 +60,7 @@ const PRICE_OPTIONS  = [10000,20000,30000,40000,50000,60000,70000,80000,90000,10
 const GVM_OPTIONS    = [600,800,1000,1250,1500,1750,2000,2250,2500,2750,3000,3500,4000,4500,5000,5500,6000,6500,7000,7500,8000];
 const SLEEP_OPTIONS  = [1,2,3,4,5,6,7];
 const YEAR_OPTIONS   = [2027,2026,2025,2024,2023,2022,2021,2020,2019,2018,2017,2016,2015,2014,2013,2012,2011,2010,2009,2008,2007,2006,2005,2004,2000,1975];
-const LENGTH_OPTIONS = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28];
+const LENGTH_OPTIONS = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31];
 
 /** Same param shape as FilterSlider's buildMakeCountParams — make/model excluded
  * on purpose (they're what group_by is counting), everything else included so
@@ -778,7 +778,9 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
       {(currentFilters.state || currentFilters.region || currentFilters.suburb ||
         currentFilters.make || currentFilters.model || currentFilters.engine_make || currentFilters.from_price || currentFilters.to_price ||
         currentFilters.minKg || currentFilters.maxKg || currentFilters.condition ||
-        currentFilters.from_sleep || currentFilters.to_sleep) && (
+        currentFilters.from_sleep || currentFilters.to_sleep ||
+        currentFilters.from_length || currentFilters.to_length ||
+        currentFilters.acustom_fromyears || currentFilters.acustom_toyears) && (
         <div className="container">
           <div className="active-chips-row">
             {currentFilters.make && (
@@ -871,6 +873,32 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
                       : `Upto ${currentFilters.to_sleep} Berths`}
                 </span>
                 <span className="chip-close" onClick={() => removeChip("sleep", { from_sleep:undefined, to_sleep:undefined })}>×</span>
+              </span>
+            )}
+            {(currentFilters.from_length || currentFilters.to_length) && (
+              <span className={`active-chip${removingChip === "length" ? " chip-removing" : ""}`}>
+                <span className="chip-label" onClick={handleAllFiltersOpen}>
+                  {currentFilters.from_length && currentFilters.to_length
+                    ? `${currentFilters.from_length} – ${currentFilters.to_length} ft`
+                    : currentFilters.from_length
+                      ? `From ${currentFilters.from_length} ft`
+                      : `Upto ${currentFilters.to_length} ft`}
+                </span>
+                <span className="chip-close" onClick={() => removeChip("length", { from_length:undefined, to_length:undefined })}>×</span>
+              </span>
+            )}
+            {(currentFilters.acustom_fromyears || currentFilters.acustom_toyears) && (
+              <span className={`active-chip${removingChip === "year" ? " chip-removing" : ""}`}>
+                <span className="chip-label" onClick={handleAllFiltersOpen}>
+                  {currentFilters.acustom_fromyears && currentFilters.acustom_toyears
+                    ? String(currentFilters.acustom_fromyears) === String(currentFilters.acustom_toyears)
+                      ? `${currentFilters.acustom_fromyears}`
+                      : `${currentFilters.acustom_fromyears} – ${currentFilters.acustom_toyears}`
+                    : currentFilters.acustom_fromyears
+                      ? `From ${currentFilters.acustom_fromyears}`
+                      : `Upto ${currentFilters.acustom_toyears}`}
+                </span>
+                <span className="chip-close" onClick={() => removeChip("year", { acustom_fromyears:undefined, acustom_toyears:undefined })}>×</span>
               </span>
             )}
             <button className="chip-clear-all" disabled={clearingAll} onClick={handleClearAll}>

@@ -186,7 +186,7 @@ export default function CaravanDetailModal({
     try {
       const navHistory = sessionStorage.getItem("nav_history");
       const navigation_path = navHistory
-        ? (() => { try { return JSON.parse(navHistory).join(", "); } catch { return ""; } })()
+        ? (() => { try { return JSON.parse(navHistory).join(","); } catch { return ""; } })()
         : "";
 
       const res = await fetch("/api/enquiry/", {
@@ -194,6 +194,7 @@ export default function CaravanDetailModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           product_id: product.id ?? product.slug ?? product.name,
+          product_slug: product.slug ?? "",
           email: form.email.trim(),
           name: form.name.trim(),
           phone: form.phone.trim(),

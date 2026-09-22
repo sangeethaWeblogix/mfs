@@ -41,7 +41,7 @@ export const TYPES_NO_STATE = [
 
 export const FILTERS_NO_STATE = [
   {
-    icon: "/images/Budget.png", title: "By Budget",
+    icon: "/images/Budget.png", title: "By Price",
     links: [
       { text: "Under $100,000",      href: "/listings/under-100000/" },
       { text: "$100,000 – $150,000", href: "/listings/between-100000-150000/" },

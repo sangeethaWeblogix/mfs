@@ -25,7 +25,7 @@ export default function ThankYouClient() {
         <CardContent>
           <i
             className="bi bi-check-circle-fill"
-            style={{ fontSize: 80, color: "#22c55e", display: "inline-block", marginBottom: 20 }}
+            style={{ fontSize: 80, color: "#1aa8de", display: "inline-block", marginBottom: 20 }}
             aria-hidden="true"
           />
           <span className="visually-hidden">Success</span>

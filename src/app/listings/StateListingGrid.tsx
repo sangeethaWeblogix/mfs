@@ -241,12 +241,12 @@ function ListingCard({
   ];
 
 
- const postTrackClick = async (product_id: number) => {
+ const postTrackClick = async (slug: string) => {
     try {
       await fetch("/api/track-click/", {
         method: "POST",
        headers: { "Content-Type": "text/plain" },
-        body: encodeObfuscated({ product_id }),
+        body: encodeObfuscated({ slug }),
       });
    } catch {}
    };
@@ -286,7 +286,7 @@ function ListingCard({
       prefetch={false}
       className={`lsd-card${spotlight ? " lsd-card--spotlight" : ""}`}
       data-product-id={item.id}
-      onClick={() => postTrackClick(item.id)}
+      onClick={() => item.slug && postTrackClick(item.slug)}
     >
       {/* Image */}
       <div className="lsd-card__img-wrap">

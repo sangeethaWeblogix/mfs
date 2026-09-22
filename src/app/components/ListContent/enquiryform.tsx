@@ -113,7 +113,7 @@
      try {
        const navHistory = sessionStorage.getItem("nav_history");
        const navigation_path = navHistory
-         ? (() => { try { return JSON.parse(navHistory).join(", "); } catch { return ""; } })()
+         ? (() => { try { return JSON.parse(navHistory).join(","); } catch { return ""; } })()
          : "";
  
        const res = await fetch("/api/enquiry/", {

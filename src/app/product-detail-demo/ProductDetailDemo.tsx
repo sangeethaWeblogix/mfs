@@ -415,18 +415,18 @@ const priceUpperIdx = !isPOA ? PRICE_STEPS.findIndex(s => s >= displayPrice) : -
   }, [product.description]);
 
   useEffect(() => {
-    const productId = product.id ?? pd.id;
-    if (!productId) return;
+    const slug = product.slug ?? pd.slug;
+    if (!slug) return;
     fetch("/api/track-product/", {
       method: "POST",
       headers: { "Content-Type": "text/plain" },
-      body: encodeObfuscated({ product_id: Number(productId) }),
+      body: encodeObfuscated({ slug }),
     })
       .then((r) => parseObfuscatedResponse(r))
       .then((res) => console.log("[track-product] response:", res))
       .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product.id]);
+  }, [product.slug]);
 
   const [descOpen, setDescOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
