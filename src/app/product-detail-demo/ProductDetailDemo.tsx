@@ -321,7 +321,7 @@ export default function ProductDetailDemo({ data, similarData }: Props) {
   const makeDetailUrl = (label: string, value: string, apiUrl: string): string => {
     const v = value.trim();
     const L = label.toLowerCase();
-    if (L === "year" || L === "years") { const n = toInt(v); return n ? `/listings/${n}-caravans-range/` : ""; }
+    if (L === "year" || L === "years") { const n = toInt(v); return n ? `/listings/${n}-${n}-caravans-range/` : ""; }
     if (apiUrl) return linkFromApiUrl(apiUrl, v).href;
     if (L === "type" || L === "category") return v ? `/listings/${slugify(v.replace(/\s*caravans?\s*/gi, " ").trim())}-category/` : "";
     if (L === "make") return v ? `/listings/${slugify(v)}/` : "";

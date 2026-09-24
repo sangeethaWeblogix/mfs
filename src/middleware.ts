@@ -4,20 +4,25 @@
  import { isAllowedSingleBand } from "@/utils/seo/band-utils";
  const API_KEY = process.env.MFS_API_KEY;
 
- const API_WP = 'https://admin.motorhomesforsale.com.au/wp-json/mfs/v1';
+ // Legacy host — kept only as a last-resort fallback if the live API base
+ // env var is somehow unset. The real, current inventory lives on the mpn/v1
+ // host below (NEXT_PUBLIC_MFS_API_BASE); this one's make/model list has
+ // gone stale (e.g. missing makes added since, like "Explorer") and wrongly
+ // 410'd valid product-detail links that pointed at them.
+ const API_WP = process.env.NEXT_PUBLIC_MFS_API_BASE || 'https://admin.motorhomesforsale.com.au/wp-json/mpn/v1/motorhomes';
 
- /* Live make/model/state/region validation — same params_count endpoint the
-    browse filter panels use (group_by=make nests valid models per make;
-    group_by=state nests valid regions per state). Replaces the old
-    cfs-paths/*.json snapshots, which went stale against live inventory
-    (e.g. a make with real listings could still be missing from the
-    pre-generated sitemap dump and get wrongly 410'd). */
+ /* Live make/model/state/region validation against the current params-count
+    endpoint (hyphenated) — same one StateFilterBar's /api/d2/ proxy uses.
+    Replaces the old params_count (underscore) endpoint on the legacy host,
+    which also assumed group_by=make/state nested model/region breakdowns —
+    the live endpoint never does that, so model/region need their own scoped
+    call (group_by=model&motorhome_make=X / group_by=region&state=X). */
  async function fetchParamsCount(query: string): Promise<any | null> {
    try {
      const controller = new AbortController();
      const tid = setTimeout(() => controller.abort(), 5000);
-     const res = await fetch(`${API_WP}/params_count?${query}`, {
-       headers: { 'User-Agent': 'next-middleware', ...(API_KEY && { 'X-API-Key': API_KEY }) },
+     const res = await fetch(`${API_WP}/params-count?${query}`, {
+       headers: { 'User-Agent': 'next-middleware', ...(API_KEY && { 'X-Secret-Key': API_KEY }) },
        signal: controller.signal,
        cache: 'no-store',
      });
@@ -34,22 +39,26 @@
  async function isValidMakeModel(makeSlug: string, modelSlug?: string): Promise<boolean> {
    const data = await fetchParamsCount('group_by=make');
    if (!data) return true; // API error — don't block, let the live pool check further down handle it
-   const makes = data?.data?.make ?? [];
+   const makes = data?.data ?? [];
    const makeEntry = makes.find((m: any) => m.slug === makeSlug);
    if (!makeEntry) return false;
    if (!modelSlug) return true;
-   const models = makeEntry.model ?? [];
+   const modelData = await fetchParamsCount(`group_by=model&motorhome_make=${encodeURIComponent(makeSlug)}`);
+   if (!modelData) return true;
+   const models = modelData?.data ?? [];
    return models.some((mo: any) => mo.slug === modelSlug);
  }
 
  async function isValidStateRegion(stateSlug: string, regionSlug?: string): Promise<boolean> {
    const data = await fetchParamsCount('group_by=state');
    if (!data) return true;
-   const states = data?.data?.state ?? [];
+   const states = data?.data ?? [];
    const stateEntry = states.find((s: any) => s.slug === stateSlug);
    if (!stateEntry) return false;
    if (!regionSlug) return true;
-   const regions = stateEntry.region ?? [];
+   const regionData = await fetchParamsCount(`group_by=region&state=${encodeURIComponent(stateSlug)}`);
+   if (!regionData) return true;
+   const regions = regionData?.data ?? [];
    return regions.some((r: any) => r.slug === regionSlug);
  }
 
@@ -58,7 +67,7 @@
      const controller = new AbortController();
      const tid = setTimeout(() => controller.abort(), 5000);
      const res = await fetch(`${API_WP}/location-search?keyword=${encodeURIComponent(suburb)}`, {
-       headers: { 'User-Agent': 'next-middleware', ...(apiKey && { 'X-API-Key': apiKey }) },
+       headers: { 'User-Agent': 'next-middleware', ...(apiKey && { 'X-Secret-Key': apiKey }) },
        signal: controller.signal,
        cache: 'no-store',
      });

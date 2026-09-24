@@ -145,7 +145,6 @@ function normalizeProductDetail(raw: any) {
     attr("Model", isCustomBuilt ? null : raw.model?.name),
     attr("Years", raw.year),
     attr("Conditions", raw.condition),
-    attr("RV Class", raw.category?.[0]),
     attr("Length", withFt(raw.length)),
     attr("Width", raw.width),
     attr("Height", raw.height),
@@ -176,7 +175,9 @@ function normalizeProductDetail(raw: any) {
     attribute_urls,
     sku: raw.sku,
     seller_type: raw.seller_type,
-    region: raw.region ? { value: titleCase(raw.region), slug: raw.region } : undefined,
+    region: raw.region
+      ? { value: titleCase(raw.region), slug: `${raw.region.trim().toLowerCase().replace(/\s+/g, "-")}-region` }
+      : undefined,
   };
 
   return {
