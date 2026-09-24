@@ -110,6 +110,12 @@ const parseAmt = (v: string | number | undefined) => {
 const fmt = (n: number) =>
   n.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
 const slugify = (s: string) => s.trim().toLowerCase().replace(/\s+/g, "-");
+// Matches slugBuilter.ts's modelSlug() — dots must become hyphens too (model
+// names like "VW.24-3.DS-MY26" otherwise keep dots that plain slugify()
+// leaves in place, which never matches the canonical model slug the
+// middleware rebuilds and gets the link wrongly 410'd).
+const modelSlugify = (s: string) =>
+  s.trim().toLowerCase().replace(/\./g, "-").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
 const toInt = (s: string) => { const n = parseInt(String(s).replace(/[^\d]/g, ""), 10); return Number.isFinite(n) && n > 0 ? n : null; };
 const linkFromApiUrl = (rawUrl: string, text: string) => { const u = (rawUrl || "").trim().replace(/^\/+|\/+$/g, ""); return { href: /[=&]/.test(u) ? `/listings/?${u}` : `/listings/${u}/`, text }; };
 const STATE_ABBR: Record<string, string> = {
@@ -326,7 +332,7 @@ export default function ProductDetailDemo({ data, similarData }: Props) {
     if (L === "type" || L === "category") return v ? `/listings/${slugify(v.replace(/\s*caravans?\s*/gi, " ").trim())}-category/` : "";
     if (L === "make") return v ? `/listings/${slugify(v)}/` : "";
     if (L.trim() === "vehicle make") return v ? `/listings/${slugify(v)}-vehicle-make/` : "";
-    if (L === "model") { const mk = pickFull("Make"); const mkSlug = mk.url?.trim().replace(/^\/+|\/+$/g, "") || slugify(mk.value); return v ? `/listings/${mkSlug}/${slugify(v)}/` : ""; }
+    if (L === "model") { const mk = pickFull("Make"); const mkSlug = mk.url?.trim().replace(/^\/+|\/+$/g, "") || slugify(mk.value); return v ? `/listings/${mkSlug}/${modelSlugify(v)}/` : ""; }
     if (L === "condition" || L === "conditions") return v ? `/listings/${slugify(v)}-condition/` : "";
     if (L === "sleeping capacity" || L === "sleep" || L === "sleeps") { const n = toInt(v); return n ? `/listings/under-${n}-people-sleeping-capacity/` : ""; }
     if (L === "length") { const n = toInt(v); return n ? `/listings/under-${n}-length-in-feet/` : ""; }

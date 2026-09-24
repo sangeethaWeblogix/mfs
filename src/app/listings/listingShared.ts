@@ -60,6 +60,14 @@ export type SeoV2 = {
 export function buildFeaturedOrder(products: Listing[], premiumsRaw: Listing[], exclusivesRaw: Listing[]): Listing[] {
   const premiums   = premiumsRaw.map((p) => ({ ...p, is_premium: true }));
   const exclusives = exclusivesRaw.map((p) => ({ ...p, is_exclusive: true }));
+
+  // No regular products matched the filter (e.g. a GVM/price band with no
+  // inventory) — nothing to fill slots 1/2 with, so show every spotlight
+  // van instead of the usual single slot-3 pick, rather than a near-empty grid.
+  if (products.length === 0 && exclusives.length > 0) {
+    return exclusives;
+  }
+
   const heroFeatured = products.slice(0, 2);
   const hero = [...heroFeatured, ...exclusives.slice(0, 1), ...premiums.slice(0, 2)];
   const heroIds = new Set(hero.map((p) => p.id));
