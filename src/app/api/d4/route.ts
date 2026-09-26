@@ -16,7 +16,11 @@ export async function POST(req: Request) {
     const { slug } = await readObfuscatedBody<{ slug?: string }>(req);
     if (!slug) return NextResponse.json({ success: false });
 
-    await fetch(`${API_BASE}/impression?slug=${encodeURIComponent(slug)}`, {
+    // Cache-buster: the upstream nginx proxy caches GET /impression by URL,
+    // which has side effects (increments the impression counter) — without
+    // this, every repeat impression of the same product replays the
+    // first-ever cached response and never re-records the hit.
+    await fetch(`${API_BASE}/impression?slug=${encodeURIComponent(slug)}&_=${Date.now()}`, {
       headers: {
         ...(API_KEY && { "X-Secret-Key": API_KEY }),
       },

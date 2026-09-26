@@ -7,7 +7,11 @@ export async function POST(req: Request) {
     const { slug } = await readObfuscatedBody<{ slug?: string }>(req);
     if (!slug) return Response.json({ success: false });
 
-    await fetch(`${API_BASE}/click?slug=${encodeURIComponent(slug)}`, {
+    // Cache-buster: the upstream nginx proxy caches GET /click by URL, which
+    // has side effects (increments the click counter) — without this, every
+    // repeat click on the same product replays the first-ever cached
+    // response and never re-records the hit.
+    await fetch(`${API_BASE}/click?slug=${encodeURIComponent(slug)}&_=${Date.now()}`, {
       headers: {
         ...(API_KEY && { "X-Secret-Key": API_KEY }),
       },
