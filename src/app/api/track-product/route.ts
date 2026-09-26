@@ -8,18 +8,33 @@ export async function POST(req: Request) {
     const { slug } = await readObfuscatedBody<{ slug?: string }>(req);
     if (!slug) return NextResponse.json({ success: false });
 
+    // GET requests to /click and /impression silently hit a different,
+    // non-recording code path upstream (it just echoes back the product
+    // detail JSON — an nginx proxy cache also serves those from cache on
+    // repeat calls, but that's a symptom, not the cause). Both endpoints
+    // must be called with POST to actually reach the counter-incrementing
+    // handler — confirmed live: GET returns plain product JSON, POST
+    // returns {success, click_count, unique_click_count}.
+    //
+    // Also forward the real visitor's IP/UA — this route calls WP
+    // server-side, so without this WP would attribute every click to our
+    // own server's IP/UA instead of the real visitor's.
+    const visitorIp =
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+      req.headers.get("x-real-ip") ||
+      "";
+    const userAgent = req.headers.get("user-agent") || "";
+
     const headers = {
       ...(API_KEY && { "X-Secret-Key": API_KEY }),
+      ...(visitorIp && { "X-Forwarded-For": visitorIp, "X-Real-IP": visitorIp }),
+      ...(userAgent && { "User-Agent": userAgent }),
     };
 
-    // Cache-buster: the upstream nginx proxy caches these GET endpoints by
-    // URL, which have side effects (increment click/impression counters) —
-    // without this, every repeat view of the same product replays the
-    // first-ever cached response and never re-records the hit.
-    const bust = Date.now();
     await Promise.all([
-      fetch(`${API_BASE}/click?slug=${encodeURIComponent(slug)}&_=${bust}`, { headers }),
-      fetch(`${API_BASE}/impression?slug=${encodeURIComponent(slug)}&_=${bust + 1}`, { headers }),
+      fetch(`${API_BASE}/click?slug=${encodeURIComponent(slug)}`, { method: "POST", headers }),
+      fetch(`${API_BASE}/impression?slug=${encodeURIComponent(slug)}`, { method: "POST", headers }),
     ]);
 
     return NextResponse.json({ success: true });
