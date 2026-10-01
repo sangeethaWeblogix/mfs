@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
           `https://nominatim.openstreetmap.org/search?postalcode=${pincode}&countrycodes=au&format=json&limit=1`,
           {
             headers: {
-              "User-Agent": "caravansforsale.com.au contact@caravansforsale.com.au",
+              "User-Agent": "motorhomesforsale.com.au contact@motorhomesforsale.com.au",
               "Accept-Language": "en",
             },
             next: { revalidate: false },

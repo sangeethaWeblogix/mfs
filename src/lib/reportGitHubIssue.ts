@@ -159,7 +159,7 @@ ${payload.message}
 - [ ] Confirm API response time is under 30s
 
 ---
-*Auto-reported by production error handler — caravansforsale.com.au*`;
+*Auto-reported by production error handler — motorhomesforsale.com.au*`;
 
     await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues`, {
       method: "POST",

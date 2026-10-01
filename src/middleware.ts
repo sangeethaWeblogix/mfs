@@ -289,7 +289,7 @@
 
    /* 🚫 Unknown multi-segment paths → 410 (e.g. /queensland-state/stoney-creek/ without /listings/ prefix) */
    const KNOWN_MULTI_SEGMENT = new Set([
-     'listings', 'product', 'api', '_next', 'blog', 'author', 'caravan-manufacturers',
+     'listings', 'product', 'api', '_next', 'blog', 'author',
      '410', '404', '410-new', 'images', 'fonts', 'icons',
      'demo', 'product-detail-demo',
      'sell-my-motorhome',

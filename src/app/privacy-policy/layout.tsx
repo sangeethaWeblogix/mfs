@@ -19,7 +19,7 @@ import { ReactNode } from "react";
    
    openGraph: {
       url: "https://www.motorhomesforsale.com.au/privacy-policy/",
-     title: "Privacy Policy - caravansforsale.com.au - Motorhome Marketplace",
+     title: "Privacy Policy - motorhomesforsale.com.au - Motorhome Marketplace",
        description:
      "Learn about Motorhome Marketplace's privacy policy on data collection, usage, security measures, and your rights regarding your information.",
      

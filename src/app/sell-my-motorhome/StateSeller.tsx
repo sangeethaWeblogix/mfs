@@ -140,7 +140,7 @@ export default function StateSeller({ state }: StateSellerProps) {
             </div>
 
             {/* CTA */}
-            <a className="demo-hero__cta" aria-disabled="true" tabIndex={-1} style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }}>
+            <a href="https://seller.marketplacenetwork.com.au/motorhome-seller-subscription/" className="demo-hero__cta">
               List Your Motorhome Now <i className="fa-solid fa-arrow-right" />
             </a>
           </div>{/* end demo-price-wrapper */}
@@ -232,7 +232,7 @@ export default function StateSeller({ state }: StateSellerProps) {
                     </li>
                   ))}
                 </ul>
-                <a className="demo-reach-card__cta" aria-disabled="true" tabIndex={-1} style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }}>
+                <a href="https://seller.marketplacenetwork.com.au/motorhome-seller-subscription/" className="demo-reach-card__cta">
                   List Your Motorhome Now <i className="fa-solid fa-arrow-right" />
                 </a>
               </div>
@@ -423,7 +423,7 @@ export default function StateSeller({ state }: StateSellerProps) {
             Start selling your motorhome in {stateLabel} today for just{" "}
             <strong>$49 (Inc. GST)</strong> — live until sold.
           </p>
-          <a className="btn white_btn" aria-disabled="true" tabIndex={-1} style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }}>
+          <a href="https://seller.marketplacenetwork.com.au/motorhome-seller-subscription/" className="btn white_btn">
             List Your Motorhome Now
           </a>
           <p className="demo-cta-strip__alt-link">

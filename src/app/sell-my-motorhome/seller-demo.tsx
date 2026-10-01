@@ -152,7 +152,7 @@
            </div>
  
            {/* CTA — inside wrapper so it attaches seamlessly to card bottom */}
-           <a className="demo-hero__cta" aria-disabled="true" tabIndex={-1} style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }}>
+           <a href="https://seller.marketplacenetwork.com.au/motorhome-seller-subscription/" className="demo-hero__cta">
              List Your Motorhome Now <i className="fa-solid fa-arrow-right" />
            </a>
            </div>{/* end demo-price-wrapper */}
@@ -269,7 +269,7 @@
                    </li>
                  ))}
                </ul>
-               <a className="demo-reach-card__cta" aria-disabled="true" tabIndex={-1} style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }}>
+               <a href="https://seller.marketplacenetwork.com.au/motorhome-seller-subscription/" className="demo-reach-card__cta">
                  List My Motorhome Now <i className="fa-solid fa-arrow-right" />
                </a>
              </div>
@@ -286,7 +286,6 @@
                    <ul>
                      <li><i className="fa-solid fa-circle-check" />Your ad stays live until it sells.</li>
                      <li><i className="fa-solid fa-circle-check" />You can update details, photos, and price anytime.</li>
-                     <li><i className="fa-solid fa-circle-check" />Mark as sold or remove anytime — no penalties.</li>
                    </ul>
                  </div>
                </div>
@@ -296,7 +295,6 @@
                    <h4>Can I edit my listing after posting?</h4>
                    <ul>
                      <li><i className="fa-solid fa-circle-check" />Yes, updates are allowed anytime.</li>
-                     <li><i className="fa-solid fa-circle-check" />No penalties or restrictions.</li>
                    </ul>
                  </div>
                </div>
@@ -472,7 +470,7 @@
              Start selling your motorhome today for just{" "}
              <strong>$49 (Inc. GST)</strong> — Live until sold!
            </p>
-           <a className="btn white_btn" aria-disabled="true" tabIndex={-1} style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }}>
+           <a href="https://seller.marketplacenetwork.com.au/motorhome-seller-subscription/" className="btn white_btn">
              List Your Motorhome Now
            </a>
          </div>

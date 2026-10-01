@@ -87,7 +87,7 @@ const BROWSE_TABS: BrowseTab[] = [
   {
     label: "Manufacturer",
     icon: "bi-buildings",
-    viewAll: { text: "View all manufacturers", href: "/caravan-manufacturers/" },
+    viewAll: { text: "View all manufacturers", href: "/listings/" },
     links: [
       { text: "Jayco Motorhomes for Sale",       href: "/listings/jayco/" },
       { text: "Snowy River Motorhomes for Sale", href: "/listings/snowy-river/" },
