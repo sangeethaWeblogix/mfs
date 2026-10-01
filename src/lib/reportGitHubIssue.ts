@@ -153,7 +153,7 @@ ${payload.message}
 \`\`\`
 
 ### Checklist
-- [ ] Verify backend API is reachable: \`https://admin.motorhomesforsale.com.au/wp-json/mfs/v1/new_optimize_code\`
+- [ ] Verify backend API is reachable: \`https://admin.marketplacenetwork.com.au/wp-json/mpn/v1/motorhomes/pool\`
 - [ ] Check \`MFS_API_KEY\` in Vercel environment variables
 - [ ] Check Vercel function logs for this timeframe
 - [ ] Confirm API response time is under 30s

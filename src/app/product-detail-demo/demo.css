@@ -840,6 +840,7 @@
   color: #1a1a1a;
   margin: 0;
   line-height: 1.4;
+  min-height: calc(1.4em * 2);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -863,6 +864,8 @@
   font-weight: 700;
   color: #000000;
   margin: 2px 0 0;
+  margin-top: auto;
+  padding-top: 2px;
 }
 
 /* View all — right column (20%) */

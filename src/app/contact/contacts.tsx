@@ -73,25 +73,21 @@ export default function ContactSection() {
     try {
       setLoading(true);
 
-      const form = new FormData();
-      form.append("_wpcf7", "72");
-      form.append("_wpcf7_version", "5.9.3");
-      form.append("_wpcf7_locale", "en_US");
-      form.append("_wpcf7_unit_tag", "wpcf7-f72-p45-o1");
-      form.append("_wpcf7_container_post", "45");
-
-      Object.entries(formData).forEach(([key, value]) =>
-        form.append(key, value)
-      );
-
-      const res = await fetch(
-        "https://admin.motorhomesforsale.com.au/wp-json/contact-form-7/v1/contact-forms/72/feedback",
-        { method: "POST", body: form }
-      );
+      const res = await fetch("/api/contact/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData["your-name"],
+          email: formData["your-email"],
+          phone: formData["your-phone"],
+          postcode: formData["you-postcode"],
+          message: formData["your-message"],
+        }),
+      });
 
       const data = await res.json();
 
-      if (data.status === "mail_sent") {
+      if (data.success) {
         setMessage("Message sent successfully!");
         setMessageType("success");
         // clear form + errors

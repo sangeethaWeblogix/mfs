@@ -278,10 +278,9 @@ export default function CaravanDetailModal({
       String(product.regularPrice).replace(/[^0-9.]/g, "")
     );
 
-    if (sale > 0) return product.salePrice;
-    if (regular > 0) return product.regularPrice;
-
-    return "POA";
+    const value = sale > 0 ? sale : regular > 0 ? regular : 0;
+    if (value <= 0) return "POA";
+    return `$${value.toLocaleString("en-AU")}`;
   };
 
   return (

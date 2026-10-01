@@ -4,12 +4,9 @@
  import { isAllowedSingleBand } from "@/utils/seo/band-utils";
  const API_KEY = process.env.MFS_API_KEY;
 
- // Legacy host — kept only as a last-resort fallback if the live API base
- // env var is somehow unset. The real, current inventory lives on the mpn/v1
- // host below (NEXT_PUBLIC_MFS_API_BASE); this one's make/model list has
- // gone stale (e.g. missing makes added since, like "Explorer") and wrongly
- // 410'd valid product-detail links that pointed at them.
- const API_WP = process.env.NEXT_PUBLIC_MFS_API_BASE || 'https://admin.motorhomesforsale.com.au/wp-json/mpn/v1/motorhomes';
+ // Fallback only applies if the live API base env var is somehow unset —
+ // every real request uses NEXT_PUBLIC_MFS_API_BASE (the mpn/v1 host).
+ const API_WP = process.env.NEXT_PUBLIC_MFS_API_BASE || 'https://admin.marketplacenetwork.com.au/wp-json/mpn/v1/motorhomes';
 
  /* Live make/model/state/region validation against the current params-count
     endpoint (hyphenated) — same one StateFilterBar's /api/d2/ proxy uses.
@@ -140,8 +137,9 @@
    const p = new URLSearchParams();
    p.set('page', '1');
    if (filters.category) p.set('category', filters.category);
-   if (filters.make) p.set('make', filters.make);
+   if (filters.make) p.set('motorhome_make', filters.make);
    if (filters.model) p.set('model', filters.model);
+   if (filters.engine_make) p.set('vehicle_make', filters.engine_make);
    if (filters.state) p.set('state', filters.state);
    if (filters.region) p.set('region', filters.region);
    if (filters.suburb) p.set('suburb', filters.suburb);
@@ -312,7 +310,7 @@
      const slug = url.pathname.replace(/^\/product\//, '').replace(/\/$/, '');
      if (slug) {
        try {
-         const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE || 'https://admin.motorhomesforsale.com.au/wp-json/mfs/v1';
+         const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE || 'https://admin.marketplacenetwork.com.au/wp-json/mpn/v1/motorhomes';
          const controller = new AbortController();
          const timeoutId = setTimeout(() => controller.abort(), 5000);
          const apiRes = await fetch(
@@ -384,9 +382,7 @@
        // Build API params using the same mapping as fetchListings (api/listings/api.ts).
        // Raw filter keys (minKg, maxKg, sleeps) must be converted to API names (from_gvm, to_gvm, sleep).
        const apiParams = buildApiParams(filters);
-       const apiUrl =
-         "https://admin.motorhomesforsale.com.au/wp-json/mfs/v1/pool_test?" +
-         apiParams.toString();
+       const apiUrl = `${API_WP}/pool?` + apiParams.toString();
 
        const controller = new AbortController();
        const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -412,13 +408,15 @@
            data = {};
          }
 
-         // 0 regular products:
-         //   - empExclusive also empty → 410 (Vercel shows its own Gone page — no content anyway)
-         //   - empExclusive has items  → 200 noindex (Vercel intercepts 410+rewrite, page must show exclusive content)
-         const products = data?.products ?? [];
-         const empExclusive = data?.emp_exclusive_products ?? [];
-         if (products.length === 0) {
-           if (empExclusive.length === 0) {
+         // 0 regular products (counts.total covers every bucket — featured/
+         // new/used/premium/regular — regardless of which response shape
+         // /pool returned this call):
+         //   - 0 exclusives too → noindex (page component handles the empty state)
+         //   - exclusives exist → 200 noindex + rewrite so the page shows them
+         const totalCount = Number(data?.counts?.total ?? 0);
+         const exclusiveCount = Number(data?.counts?.exclusive ?? (data?.exclusive_products?.length ?? 0));
+         if (totalCount === 0) {
+           if (exclusiveCount === 0) {
              // Don't 410 from middleware — ISR/page component handles empty state
              robotsHeader = "noindex, nofollow";
            } else {
@@ -426,7 +424,10 @@
              return NextResponse.rewrite(rewriteUrl);
            }
          } else {
-           const seo = data?.seo_v2 ?? data?.seo ?? {};
+           // mpn/v1's seo_v2 doesn't carry explicit index/follow fields (unlike
+           // the old pool_test's seo_v2) — default to index/follow and let the
+           // band-page rule below override when applicable.
+           const seo = data?.seo_v2 ?? {};
            const rawIndex = String(seo?.index ?? "").toLowerCase().trim();
            const rawFollow = String(seo?.follow ?? "").toLowerCase().trim();
 
@@ -443,24 +444,6 @@
            if (hasBand && !isSingleAllowedBand) {
              robotsHeader = "noindex, nofollow";
            }
-         }
-       } else if (apiRes.status === 410) {
-         // WordPress returns 410 for 0 products — set noindex but let ISR/page handle display
-         try {
-           const raw410 = await apiRes.text();
-           const idx410 = raw410.indexOf('{"');
-           const data410 = JSON.parse(idx410 > 0 ? raw410.substring(idx410) : raw410);
-           const empExclusive410 = data410?.emp_exclusive_products ?? [];
-           if (empExclusive410.length === 0) {
-             robotsHeader = "noindex, nofollow";
-             // Don't render410 — let ISR serve cached HTML
-           } else {
-             const rewriteUrl410 = new URL(`/api/listings-410/${slugParts.join('/')}${url.search}`, request.url);
-             return NextResponse.rewrite(rewriteUrl410);
-           }
-         } catch {
-           robotsHeader = "noindex, nofollow";
-           // Don't render410 — let ISR serve cached HTML
          }
        }
      } catch (error: any) {

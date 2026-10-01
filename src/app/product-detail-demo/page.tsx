@@ -33,11 +33,30 @@ const fetchProduct = cache(async () => {
   }
 });
 
-async function fetchSimilarProducts(productId: string | number, seed: number) {
+function normalizeSimilarItem(raw: any) {
+  return {
+    id: raw.id,
+    name: raw.title ?? raw.name ?? "",
+    slug: raw.slug,
+    image_format: Array.isArray(raw.r2_thumbnails) ? raw.r2_thumbnails : (raw.image_format ?? []),
+    regular_price: raw.regular_price,
+    sale_price: raw.sale_price,
+    state: raw.state,
+    region: raw.region,
+    condition: raw.condition,
+    seller_type: raw.seller_type,
+    categories: Array.isArray(raw.category) ? raw.category : (raw.category ? [raw.category] : []),
+  };
+}
+
+// Mirrors product/[slug]/page.tsx's fetchSimilarProducts — same slug-based
+// /{slug}/similar endpoint on the live mpn/v1 host.
+async function fetchSimilarProducts(slug: string) {
+  const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
   const API_KEY = process.env.MFS_API_KEY;
   try {
     const res = await fetch(
-      `https://admin.motorhomesforsale.com.au/wp-json/mfs/v1/similar_products?product_id=${productId}&seed=${seed}`,
+      `${API_BASE}/${encodeURIComponent(slug)}/similar`,
       {
         cache: "no-store",
         headers: {
@@ -50,7 +69,11 @@ async function fetchSimilarProducts(productId: string | number, seed: number) {
     const raw = await res.text();
     const idx = raw.indexOf("{");
     const json = JSON.parse(idx > 0 ? raw.substring(idx) : raw);
-    return json?.sections ?? json?.data ?? json;
+    return {
+      make_similar: (json?.same_make ?? []).map(normalizeSimilarItem),
+      price_similar: (json?.price_range ?? []).map(normalizeSimilarItem),
+      blogs: json?.blog ?? [],
+    };
   } catch {
     return null;
   }
@@ -60,9 +83,8 @@ export default async function ProductDetailDemoPage() {
   const data = await fetchProduct();
 
   const pd = data?.data?.product_details ?? {};
-  const productId = pd.id ?? pd.product_id ?? data?.data?.id ?? data?.id ?? "";
-  const seed = Math.ceil(Math.random() * 10);
-  const similarData = productId ? await fetchSimilarProducts(productId, seed) : null;
+  const slug = pd.slug ?? data?.data?.slug ?? data?.slug ?? DEMO_SLUG;
+  const similarData = await fetchSimilarProducts(slug);
 
   return (
     <main>
