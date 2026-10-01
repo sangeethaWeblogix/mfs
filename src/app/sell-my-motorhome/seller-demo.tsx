@@ -286,6 +286,7 @@
                    <ul>
                      <li><i className="fa-solid fa-circle-check" />Your ad stays live until it sells.</li>
                      <li><i className="fa-solid fa-circle-check" />You can update details, photos, and price anytime.</li>
+                     <li><i className="fa-solid fa-circle-check" />Mark as sold or remove anytime.</li>
                    </ul>
                  </div>
                </div>
