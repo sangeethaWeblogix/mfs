@@ -44,6 +44,22 @@
   font-weight: 500;
   font-size: 20px;
 }
+
+.comparison th.brand-col {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 767px) {
+  .comparison th,
+  .comparison td {
+    padding: 10px 8px;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .comparison th:not(:first-child),
+  .comparison td:not(:first-child) {
+    width: 28%;
+  }
+}
 .white_btn::before {
     content: "";
     position: absolute;

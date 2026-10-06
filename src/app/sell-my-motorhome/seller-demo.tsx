@@ -408,7 +408,7 @@
                <img src="/images/your-caravan-desktop-seller-2.jpg" className="img-fluid demo-why-img" alt="Motorhome buyers" />
              </div>
              <div className="col-md-6">
-               <h2>Why Thousands of Motorhome Buyers Visit MotorhomesForSale Every Month</h2>
+               <h2>Why Thousands of Motorhome Buyers Visit our website Every Month</h2>
                <p>
                  MotorhomesForSale.com.au is Australia's dedicated motorhome marketplace, built exclusively
                  for motorhome buyers and sellers. We attract thousands of genuine buyers every day who
