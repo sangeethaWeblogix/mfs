@@ -43,6 +43,7 @@ export const FILTERS_NO_STATE = [
   {
     icon: "/images/Budget.png", title: "By Price",
     links: [
+      { text: "Under $50,000",       href: "/listings/under-50000/" },
       { text: "Under $100,000",      href: "/listings/under-100000/" },
       { text: "$100,000 – $150,000", href: "/listings/between-100000-150000/" },
       { text: "$150,000 – $200,000", href: "/listings/between-150000-200000/" },

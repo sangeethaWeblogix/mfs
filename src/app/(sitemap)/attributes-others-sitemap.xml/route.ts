@@ -13,8 +13,10 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.motorhomesfors
  * its only coverage (unscoped and per-state).
  */
 const PRICE_PATHS = [
-  "under-100000/", "between-100000-150000/", "between-150000-200000/",
-  "between-200000-300000/", "over-300000/",
+  "under-50000/", "under-75000/", "under-100000/", "under-150000/", "under-200000/",
+  "between-50000-75000/", "between-75000-100000/", "between-100000-150000/",
+  "between-150000-200000/", "between-200000-300000/",
+  "over-200000/", "over-300000/",
 ];
 const GVM_PATHS = [
   "under-3500-kg-gvm/", "between-3500-kg-4500-kg-gvm/", "between-4500-kg-6000-kg-gvm/",
