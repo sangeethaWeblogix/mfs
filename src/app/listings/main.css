@@ -1094,7 +1094,7 @@ input.loc-search-input:focus { box-shadow: 0 0 0 1.5px #7e7e7e !important; }
 
 /* ── Listings Sell CTA ── */
 .lsd-sell-cta {
-  padding: 15px 0px 48px;
+  padding: 15px 0px 16px;
 }
 .lsd-sell-cta__inner {
     background: #f8f9fa;
@@ -1122,9 +1122,35 @@ input.loc-search-input:focus { box-shadow: 0 0 0 1.5px #7e7e7e !important; }
 }
 .lsd-sell-cta__link:hover { text-decoration: underline; }
 @media (max-width: 767px) {
-  .lsd-sell-cta { padding: 15px 0px 36px; }
+  .lsd-sell-cta { padding: 15px 0px 12px; }
   .lsd-sell-cta__inner { padding: 28px 20px; border-radius: 12px; }
   .lsd-sell-cta__title { font-size: 1.2rem; }
+}
+
+.lsd-explore-section { padding: 14px 15px 48px; }
+.lsd-explore-section .container { padding-left: 45px; padding-right: 45px; }
+.lsd-explore-title {
+  color: #000000;
+  margin: 0 0 12px;
+  font-size: 20px;
+  font-weight: 600;
+}
+.lsd-explore-body {
+  color: #000000;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.75;
+}
+.lsd-explore-link {
+  color: #1153a6;
+  font-weight: 500;
+  text-decoration: none;
+}
+.lsd-explore-link:hover { text-decoration: underline; }
+@media (max-width: 767px) {
+  .lsd-explore-section { padding: 0px 0px 36px; }
+  .lsd-explore-section .container { padding-left: 35px; padding-right: 35px; }
+  .lsd-explore-title { font-size: 1.2rem; }
 }
 
 /* ── Off-road extra content block ── */

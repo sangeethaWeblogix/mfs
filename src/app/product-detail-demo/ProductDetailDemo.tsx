@@ -866,6 +866,28 @@ const priceUpperIdx = !isPOA ? PRICE_STEPS.findIndex(s => s >= displayPrice) : -
           <a href="/" className="pdd-banner__cta">FIND DEALS NOW</a>
         </div>
 
+        {/* ── Explore Other Travel Options (region-based cross-links) ── */}
+        {locationCity && (() => {
+          const regionLabel = locationCity.replace(/\b\w/g, c => c.toUpperCase());
+          const crossStateSlug  = `${slugify(state)}-state`;
+          const crossRegionSlug = product.region?.slug ?? `${slugify(locationCity)}-region`;
+          const regionPath = `listings/${crossStateSlug}/${crossRegionSlug}/`;
+          return (
+            <section className="pdd-explore-section">
+              <h2 className="pdd-explore-title">Explore Other Travel Options in {regionLabel}</h2>
+              <p className="pdd-explore-body">
+                Not sure a motorhome is right for you? Take a look at{" "}
+                <a href={`https://www.caravansforsale.com.au/${regionPath}`} className="pdd-explore-link" target="_blank" rel="noopener noreferrer">caravans for sale</a>,{" "}
+                browse{" "}
+                <a href={`https://www.campervansforsale.au/${regionPath}`} className="pdd-explore-link" target="_blank" rel="noopener noreferrer">campervans for sale</a>{" "}
+                if you want something smaller, or compare{" "}
+                <a href={`https://www.campingtrailersforsale.com.au/${regionPath}`} className="pdd-explore-link" target="_blank" rel="noopener noreferrer">camper trailers for sale</a>{" "}
+                for your next camping trip. You&apos;ll find these on our other marketplaces.
+              </p>
+            </section>
+          );
+        })()}
+
       </div>
     </div>
 

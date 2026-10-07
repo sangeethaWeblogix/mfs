@@ -236,6 +236,23 @@
     display: inline-block;
 }
 
+/* ── Explore Other Travel Options (region cross-links) ── */
+.pdd-explore-section { margin: 40px 0; }
+.pdd-explore-title {
+  color: #000000;
+  margin: 0 0 14px;
+  font-size: 22px;
+  font-weight: 700;
+}
+.pdd-explore-body {
+  color: #333333;
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 0;
+}
+.pdd-explore-link { color: #0099da; text-decoration: none; }
+.pdd-explore-link:hover { text-decoration: underline; }
+
 /* ── Description ── */
 .pdd-desc-wrap {
   position: relative;

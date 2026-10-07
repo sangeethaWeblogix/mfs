@@ -48,6 +48,22 @@ export default function HomeBuyerGuide() {
         </div>
       </section>
 
+      {/* ── Explore Other Travel Options ── */}
+      <section className="hbg-section hbg-explore-section">
+        <div className="container">
+          <h2 className="hbg-title">Explore Other Travel Options</h2>
+          <p className="hbg-body">
+            Not sure a motorhome is right for you? Take a look at{" "}
+            <a href="https://www.caravansforsale.com.au/" className="hbg-sell-link" target="_blank" rel="noopener noreferrer">caravans for sale</a>,{" "}
+            browse{" "}
+            <a href="https://www.campervansforsale.au/" className="hbg-sell-link" target="_blank" rel="noopener noreferrer">campervans for sale</a>{" "}
+            if you want something smaller, or compare{" "}
+            <a href="https://www.campingtrailersforsale.com.au/" className="hbg-sell-link" target="_blank" rel="noopener noreferrer">camper trailers for sale</a>{" "}
+            for your next camping trip. You&apos;ll find these on our other marketplaces.
+          </p>
+        </div>
+      </section>
+
       {/* ── Sell CTA Card ── */}
       <section className="hbg-sell-section">
         <div className="container">

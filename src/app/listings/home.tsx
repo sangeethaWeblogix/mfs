@@ -9,7 +9,7 @@ import StateFilterBar, { FilterState } from "./StateFilterBar";
 import StateListingGrid, { SeoV2, Listing, buildFeaturedOrder } from "./StateListingGrid";
 import { normalizeListing } from "./listingShared";
 import StateBrowseSection from "./StateBrowseSection";
-import type { BrowseSectionData } from "./browseSectionShared";
+import { toStateSlug, stateLabel, type BrowseSectionData } from "./browseSectionShared";
 import StateContent from "./StateContent";
 import { buildApiUrl, buildListingsSlug, buildFilterBreadcrumbs, parseDemoFilters } from "./urlUtils";
 import { seededShuffle } from "./seededShuffle";
@@ -33,6 +33,44 @@ const readPage = (id: string): number | null => {
 };
 
 const SEED_MAX = 15;
+
+/** Cross-links to the sister marketplaces (caravans/campervans/camper
+ * trailers), scoped to whatever location the current /listings/ filter is
+ * at — region (if set) > state (if set) > the whole-of-Australia base page.
+ * Non-location filters (price, make, gvm, length, condition, etc.) are
+ * deliberately ignored here; only state/region change the target page. */
+function ExploreOtherOptions({ state, region }: { state?: string; region?: string }) {
+  let heading = "Australia";
+  let path = "/listings/";
+
+  if (region) {
+    const regionSlug = region.trim().toLowerCase().replace(/\s+/g, "-");
+    heading = stateLabel(region);
+    path = state
+      ? `/listings/${toStateSlug(state)}-state/${regionSlug}-region/`
+      : `/listings/${regionSlug}-region/`;
+  } else if (state) {
+    heading = stateLabel(state);
+    path = `/listings/${toStateSlug(state)}-state/`;
+  }
+
+  return (
+    <div className="lsd-explore-section">
+      <div className="container">
+        <h2 className="lsd-explore-title">Explore Other Travel Options in {heading}</h2>
+        <p className="lsd-explore-body">
+          Not sure a motorhome is right for you? Take a look at{" "}
+          <a href={`https://www.caravansforsale.com.au${path}`} className="lsd-explore-link" target="_blank" rel="noopener noreferrer">caravans for sale</a>,{" "}
+          browse{" "}
+          <a href={`https://www.campervansforsale.au${path}`} className="lsd-explore-link" target="_blank" rel="noopener noreferrer">campervans for sale</a>{" "}
+          if you want something smaller, or compare{" "}
+          <a href={`https://www.campingtrailersforsale.com.au${path}`} className="lsd-explore-link" target="_blank" rel="noopener noreferrer">camper trailers for sale</a>{" "}
+          for your next camping trip. You&apos;ll find these on our other marketplaces.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 /** Full pool data fetched server-side in page.tsx and passed as a prop so the
  *  SSR / KV-cached HTML contains real product listings from the first byte. */
@@ -737,6 +775,7 @@ export default function StateHome({
               </div>
             </div>
           </div>
+          <ExploreOtherOptions state={filters.state} region={filters.region} />
         </div>
       );
     }
@@ -777,6 +816,7 @@ export default function StateHome({
             </div>
           </div>
         </div>
+        <ExploreOtherOptions state={filters.state} region={filters.region} />
       </div>
     );
     // No server data at all — minimal white overlay (mobile flash prevention).
@@ -883,6 +923,7 @@ export default function StateHome({
             </div>
           </div>
         </div>
+        <ExploreOtherOptions state={filters.state} region={filters.region} />
       </div>
     );
   }
@@ -948,6 +989,7 @@ export default function StateHome({
           </div>
         </div>
       </div>
+      <ExploreOtherOptions state={filters.state} region={filters.region} />
     </div>
   );
 }
