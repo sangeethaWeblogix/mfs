@@ -476,7 +476,22 @@
            </a>
          </div>
        </section>
- 
+
+       {/* ── Cross-sell to other marketplaces ── */}
+       <section className="demo-cross-sell">
+         <div className="container">
+           <h2 className="demo-cross-sell__title">Have something other than a motorhome to sell?</h2>
+           <p className="demo-cross-sell__body">
+             You can{" "}
+             <a href="https://www.caravansforsale.com.au/sell-my-caravan/" className="demo-cross-sell__link" target="_blank" rel="noopener noreferrer">sell your caravan</a>,{" "}
+             <a href="https://www.campervansforsale.au/sell-my-campervan/" className="demo-cross-sell__link" target="_blank" rel="noopener noreferrer">sell your campervan</a>{" "}
+             or{" "}
+             <a href="https://www.campingtrailersforsale.com.au/sell-my-camper-trailer/" className="demo-cross-sell__link" target="_blank" rel="noopener noreferrer">sell your camper trailer</a>{" "}
+             through our other marketplaces. Visit the relevant website to see your listing options and get started.
+           </p>
+         </div>
+       </section>
+
      </div>
    );
  }

@@ -1756,7 +1756,37 @@
 
 .demo-cta-strip__alt-link a {
   color: #1aa8de;
-  
+
+  text-decoration: underline;
+}
+
+.demo-cross-sell {
+    text-align: center;
+    padding: 6px 0 36px;
+}
+
+.demo-cross-sell__title {
+ color: #000;
+    margin: 0 0 14px;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.demo-cross-sell__body {
+ color: #1c1c1c;
+    max-width: 760px;
+    margin: 0 auto;
+    font-size: 16px;
+    line-height: 1.75;
+}
+
+.demo-cross-sell__link {
+  color: #1aa8de;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.demo-cross-sell__link:hover {
   text-decoration: underline;
 }
 
