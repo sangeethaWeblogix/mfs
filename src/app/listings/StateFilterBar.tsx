@@ -62,6 +62,10 @@ const SLEEP_OPTIONS  = [1,2,3,4,5,6,7];
 const YEAR_OPTIONS   = [2027,2026,2025,2024,2023,2022,2021,2020,2019,2018,2017,2016,2015,2014,2013,2012,2011,2010,2009,2008,2007,2006,2005,2004,2000,1975];
 const LENGTH_OPTIONS = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31];
 
+// Temporarily hidden per request — flip back to true to restore the
+// "Search by Keyword" field in the combined Filters modal.
+const SHOW_KEYWORD_FILTER = false;
+
 /** Same param shape as FilterSlider's buildMakeCountParams — make/model excluded
  * on purpose (they're what group_by is counting), everything else included so
  * the make/model list narrows to what's actually available under the other
@@ -1235,53 +1239,55 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
               </div>
 
               {/* Keyword */}
-              <div className="filter-item">
-                <h4>Search by Keyword</h4>
-                <div style={{ position:"relative" }}>
-                  <div className="loc-search-wrap">
-                    <i className="bi bi-search loc-search-icon" />
-                    <input
-                      className="loc-search-input"
-                      placeholder="e.g. ensuite, solar, slide-out..."
-                      autoComplete="off"
-                      value={tempKeyword}
-                      onFocus={() => setShowKeywordSuggestions(true)}
-                      onBlur={() => setTimeout(() => setShowKeywordSuggestions(false), 200)}
-                      onChange={e => setTempKeyword(e.target.value)}
-                    />
+              {SHOW_KEYWORD_FILTER && (
+                <div className="filter-item">
+                  <h4>Search by Keyword</h4>
+                  <div style={{ position:"relative" }}>
+                    <div className="loc-search-wrap">
+                      <i className="bi bi-search loc-search-icon" />
+                      <input
+                        className="loc-search-input"
+                        placeholder="e.g. ensuite, solar, slide-out..."
+                        autoComplete="off"
+                        value={tempKeyword}
+                        onFocus={() => setShowKeywordSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowKeywordSuggestions(false), 200)}
+                        onChange={e => setTempKeyword(e.target.value)}
+                      />
+                    </div>
+
+                    {showKeywordSuggestions && tempKeyword.trim().length < 2 && (
+                      baseLoading ? (
+                        <div className="location-suggestions"><SearchSuggestionSkeleton count={4} label="Popular searches" /></div>
+                      ) : baseKeywords.length > 0 ? (
+                        <ul className="location-suggestions">
+                          {baseKeywords.map((item, idx) => (
+                            <li key={`${item.label}-${idx}`} className="suggestion-item"
+                              onMouseDown={e => { e.preventDefault(); setTempKeyword(item.label); setShowKeywordSuggestions(false); }}
+                            >{item.label}</li>
+                          ))}
+                        </ul>
+                      ) : null
+                    )}
+
+                    {showKeywordSuggestions && tempKeyword.trim().length >= 2 && (
+                      keywordLoading ? (
+                        <div className="location-suggestions"><SearchSuggestionSkeleton count={4} label="Suggested searches" /></div>
+                      ) : keywordSuggestions.length > 0 ? (
+                        <ul className="location-suggestions">
+                          {keywordSuggestions.map((item, idx) => (
+                            <li key={`${item.label}-${idx}`} className="suggestion-item"
+                              onMouseDown={e => { e.preventDefault(); setTempKeyword(item.label); setShowKeywordSuggestions(false); }}
+                            >{item.label}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p style={{ fontSize:13, color:"#888", margin:0, paddingLeft:4 }}>No results found</p>
+                      )
+                    )}
                   </div>
-
-                  {showKeywordSuggestions && tempKeyword.trim().length < 2 && (
-                    baseLoading ? (
-                      <div className="location-suggestions"><SearchSuggestionSkeleton count={4} label="Popular searches" /></div>
-                    ) : baseKeywords.length > 0 ? (
-                      <ul className="location-suggestions">
-                        {baseKeywords.map((item, idx) => (
-                          <li key={`${item.label}-${idx}`} className="suggestion-item"
-                            onMouseDown={e => { e.preventDefault(); setTempKeyword(item.label); setShowKeywordSuggestions(false); }}
-                          >{item.label}</li>
-                        ))}
-                      </ul>
-                    ) : null
-                  )}
-
-                  {showKeywordSuggestions && tempKeyword.trim().length >= 2 && (
-                    keywordLoading ? (
-                      <div className="location-suggestions"><SearchSuggestionSkeleton count={4} label="Suggested searches" /></div>
-                    ) : keywordSuggestions.length > 0 ? (
-                      <ul className="location-suggestions">
-                        {keywordSuggestions.map((item, idx) => (
-                          <li key={`${item.label}-${idx}`} className="suggestion-item"
-                            onMouseDown={e => { e.preventDefault(); setTempKeyword(item.label); setShowKeywordSuggestions(false); }}
-                          >{item.label}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p style={{ fontSize:13, color:"#888", margin:0, paddingLeft:4 }}>No results found</p>
-                    )
-                  )}
                 </div>
-              </div>
+              )}
 
             </div>
             <div className="filter-footer">
