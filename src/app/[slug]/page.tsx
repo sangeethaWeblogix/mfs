@@ -1,6 +1,11 @@
 import DeatilsPage from "./details";
 
 export const dynamic = "force-dynamic";
+// fetchBlogDetail below calls the backend directly rather than through a
+// pinned /api/* proxy route — the backend host blocks/challenges requests
+// from un-whitelisted Vercel regions, so this page must run from the same
+// whitelisted region those routes already use.
+export const preferredRegion = "syd1";
 
 import "./details.css";
 import { Card, CardContent, Typography, Button } from "@mui/material";

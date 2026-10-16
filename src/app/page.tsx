@@ -13,6 +13,12 @@ import { fetchBlogs } from "@/api/blog/api";
 const SEED_MAX = 15;
 
 export const dynamic = "force-dynamic";
+// The data fetchers below (fetchHomeFeatured, fetchStateBasedCaravans, etc.)
+// call the backend directly rather than through one of the pinned /api/*
+// proxy routes — the backend host blocks/challenges requests from
+// un-whitelisted Vercel regions, so this page must run from the same
+// whitelisted region those routes already use.
+export const preferredRegion = "syd1";
 
 export const metadata: Metadata = {
   title: {

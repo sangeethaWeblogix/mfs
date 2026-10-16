@@ -6,6 +6,11 @@ import { cache } from "react";
 import './product.css?=30006'
 
 export const dynamic = "force-dynamic";
+// fetchProductDetail/fetchSimilarProducts below call the backend directly
+// rather than through a pinned /api/* proxy route — the backend host blocks
+// /challenges requests from un-whitelisted Vercel regions, which otherwise
+// makes a legitimate product indistinguishable from a deleted one and 410s it.
+export const preferredRegion = "syd1";
 
 // export async function generateStaticParams() {
 //   const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;

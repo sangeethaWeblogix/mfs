@@ -311,30 +311,31 @@
      const slug = url.pathname.replace(/^\/product\//, '').replace(/\/$/, '');
      if (slug) {
        try {
-         const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE || 'https://admin.marketplacenetwork.com.au/wp-json/mpn/v1/motorhomes';
+         // Edge Middleware runs at whichever edge location is nearest the
+         // incoming request and can't be pinned to a region the way a
+         // serverless function can — but the backend host blocks/challenges
+         // requests from un-whitelisted regions. Calling it directly from here
+         // made that bot-challenge indistinguishable from "product doesn't
+         // exist", 410ing real listings. Proxy through the syd1-pinned
+         // /api/product-slug-check/ route (same region as the other working
+         // backend calls) instead.
          const controller = new AbortController();
          const timeoutId = setTimeout(() => controller.abort(), 5000);
-         const apiRes = await fetch(
-           `${API_BASE}/${encodeURIComponent(slug)}`,
-           {
-             headers: {
-               'User-Agent': 'next-middleware',
-               ...(API_KEY && { 'X-Secret-Key': API_KEY }),
-             },
-             signal: controller.signal,
-             cache: 'no-store',
-           }
-         );
+         const checkUrl = new URL('/api/product-slug-check', request.url);
+         checkUrl.searchParams.set('slug', slug);
+         const apiRes = await fetch(checkUrl, {
+           signal: controller.signal,
+           cache: 'no-store',
+         });
          clearTimeout(timeoutId);
-         if (!apiRes.ok) {
-           return render410(request);
+         if (apiRes.ok) {
+           const data = await apiRes.json();
+           if (data?.exists === false) {
+             return render410(request);
+           }
+           // exists === true, or inconclusive (null) — let it through.
          }
-         const rawText = await apiRes.text();
-         const jsonIdx = rawText.indexOf('{"');
-         const data = JSON.parse(jsonIdx >= 0 ? rawText.substring(jsonIdx) : rawText);
-         if (!data || Object.keys(data).length === 0) {
-           return render410(request);
-         }
+         // Non-OK from our own route: inconclusive — let the page component handle it.
        } catch (error: any) {
          if (error?.name !== 'AbortError') {
            console.error('Middleware product 410 check error:', error);

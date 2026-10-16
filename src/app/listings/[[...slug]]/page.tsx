@@ -14,6 +14,12 @@ import "../../globals.css";
 // require a client-visible follow-up fetch (see fetchInitialPool's displaySeed
 // and fetchInitialParamsCount for how each piece is produced server-side).
 export const dynamic = "force-dynamic";
+// fetchInitialPool's direct-to-WP path (seed > 0), fetchBrowseSectionData and
+// fetchInitialParamsCount all call the backend directly rather than through a
+// pinned /api/* proxy route — the backend host blocks/challenges requests
+// from un-whitelisted Vercel regions, so this page must run from the same
+// whitelisted region those routes already use.
+export const preferredRegion = "syd1";
 
 const SEED_MAX = 15;
 
