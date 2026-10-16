@@ -17,6 +17,20 @@ import type { InitialParamsCount } from "./fetchInitialParamsCount";
 // import { useBannerTracking } from "@/hooks/useBannerTracking";
 import "./main.css?=7";
 
+// Derives filters straight from the browser's own URL — authoritative even
+// when Next's router remounts this page with stale SSR props (see the
+// urlMismatch comment inside StateHome for why that happens). Pure/module
+// -level so it can run synchronously during the first render, before paint.
+function parseFiltersFromUrl(): FilterState {
+  const slugParts = window.location.pathname
+    .replace(/^\/listings\/?/, "")
+    .split("/")
+    .filter(Boolean);
+  const query: Record<string, string> = {};
+  new URLSearchParams(window.location.search).forEach((v, k) => { query[k] = v; });
+  return parseDemoFilters(slugParts, query);
+}
+
 // clickid pagination — same scheme as /listings/: no ?page=N in the URL,
 // instead a random ?clickid= id maps (via localStorage, with a `pN` suffix
 // fallback baked into the id) to the page it represents. This lets a
@@ -30,6 +44,12 @@ const readPage = (id: string): number | null => {
   const match = id.match(/p(\d+)$/);
   return match ? parseInt(match[1], 10) : null;
 };
+
+// sessionStorage (not localStorage) — survives only this tab's session, so it
+// still doesn't make a hard refresh/new visit feel "frozen" (see the seed
+// -picking comment below), but lets a stale-remount recovery (initialMismatch)
+// reuse the same seed the user was just looking at instead of reshuffling.
+const SEED_KEY = "mfs_listings_seed";
 
 const SEED_MAX = 15;
 
@@ -115,26 +135,43 @@ export default function StateHome({
   initialNewSeo,
   initialUsedSeo,
 }: Props) {
-  const [filters, setFilters] = useState<FilterState>(initialFilters);
+  // Filter changes elsewhere in this component update the URL via a raw
+  // window.history.pushState (Next's App Router has no shallow-routing
+  // support for catch-all segments), so Next's own router never learns about
+  // those URLs as real navigations. If the user then follows a real link away
+  // (e.g. to a product page) and hits Back, Next can remount this page with
+  // the `initialFilters`/`initialPool` it associates with its OWN last
+  // tracked navigation — not the filtered URL the browser's address bar and
+  // history correctly show, causing a flash of the wrong (e.g. unfiltered)
+  // content before the old effect-based resync caught up. Detect that
+  // mismatch synchronously, during the very first render, so the stale SSR
+  // props never paint even for a frame: a mismatched mount treats initialPool
+  // as absent and lets the normal live-fetch path below pull the correct data
+  // for the real URL instead.
+  const urlFilters = typeof window !== "undefined" ? parseFiltersFromUrl() : null;
+  const initialMismatch = urlFilters !== null && JSON.stringify(urlFilters) !== JSON.stringify(initialFilters);
+  const effectiveInitialPool = initialMismatch ? null : initialPool;
+
+  const [filters, setFilters] = useState<FilterState>(initialMismatch ? urlFilters! : initialFilters);
   const [page, setPage] = useState(1);
-  const [maxPages, setMaxPages] = useState(initialPool?.maxPages ?? 1);
+  const [maxPages, setMaxPages] = useState(effectiveInitialPool?.maxPages ?? 1);
   const [clickid, setClickid] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const [seo, setSeo] = useState<SeoV2 | null>(initialPool?.seo ?? initialSeo ?? null);
-  const [newSeo, setNewSeo] = useState<SeoV2 | null>(initialNewSeo ?? null);
-  const [usedSeo, setUsedSeo] = useState<SeoV2 | null>(initialUsedSeo ?? null);
+  const [seo, setSeo] = useState<SeoV2 | null>(effectiveInitialPool?.seo ?? (initialMismatch ? null : initialSeo) ?? null);
+  const [newSeo, setNewSeo] = useState<SeoV2 | null>(initialMismatch ? null : (initialNewSeo ?? null));
+  const [usedSeo, setUsedSeo] = useState<SeoV2 | null>(initialMismatch ? null : (initialUsedSeo ?? null));
   const [seed, setSeed] = useState(1);
   const [pool, setPool] = useState<{ featured: Listing[]; new: Listing[]; used: Listing[] }>(
-    initialPool
-      ? { featured: initialPool.featured, new: initialPool.new, used: initialPool.used }
+    effectiveInitialPool
+      ? { featured: effectiveInitialPool.featured, new: effectiveInitialPool.new, used: effectiveInitialPool.used }
       : { featured: [], new: [], used: [] }
   );
-  const [poolLoading, setPoolLoading] = useState(!initialPool);
+  const [poolLoading, setPoolLoading] = useState(!effectiveInitialPool);
   // Whether the current canonical /listings/ URL is in url.csv's curated
   // indexed set — gates the full hero banner (image + description) and the
   // Featured/New/Used split: indexed pages split the pool by slot_bucket into
   // three sections, non-indexed pages get one combined grid.
-  const [isIndexed, setIsIndexed] = useState(initialPool?.isIndexed ?? serverIsIndexed ?? true);
+  const [isIndexed, setIsIndexed] = useState(effectiveInitialPool?.isIndexed ?? (initialMismatch ? true : serverIsIndexed) ?? true);
 
   // Tracks whether we already consumed window.__INITIAL_POOL__ (injected by
   // the cache generator into pre-rendered HTML). Once consumed we let the
@@ -150,7 +187,7 @@ export default function StateHome({
   // giving different products on each refresh. The SSR initialPool still provides
   // a fallback render while the fetch is in flight, preventing the blank-page
   // problem that occurs when initialPool is null and the API is slow or errors.
-  const initialPropConsumed = useRef(initialPool == null || serverIsIndexed === false);
+  const initialPropConsumed = useRef(effectiveInitialPool == null || serverIsIndexed === false);
   // Snapshot of the most-recently-consumed preload data, keyed by poolApiUrl.
   // Used to re-bucket without a live fetch when only `isIndexed` changes (e.g.
   // the async /api/d3/ check resolves to a different value than the
@@ -173,10 +210,13 @@ export default function StateHome({
   // the layout before the preload is even consumed. Cleared when the pool effect
   // first runs (at which point preloadSnapshotRef takes over as the guard).
   const preloadReadRef = useRef(false);
-  // Skips the /api/d3/ effect's very first run when the server
-  // already resolved isIndexed for these initial filters — it only needs to
-  // re-check after a real client-side filter change (pushState, no fresh SSR).
-  const indexedCheckConsumed = useRef(serverIsIndexed === undefined);
+  // Starting `true` makes the /api/indexed-url/ effect run immediately on
+  // mount instead of trusting serverIsIndexed for its first run — needed both
+  // when the server never resolved it (serverIsIndexed === undefined) and
+  // when initialMismatch means serverIsIndexed belongs to a different (stale)
+  // route than the real URL, so `isIndexed` above was only guessed as `true`
+  // and must be confirmed/corrected right away instead of being skipped.
+  const indexedCheckConsumed = useRef(serverIsIndexed === undefined || initialMismatch);
 
   // ── Top banner ad (impression + click tracking) ── commented out: banner API call disabled on listing page
   // const { matchedBanners } = useBanners();
@@ -262,20 +302,31 @@ export default function StateHome({
     // Seed priority (highest → lowest):
     //   1. window.__SHUFFLE_SEED__  — injected by Cloudflare Worker into pre-rendered HTML
     //   2. ?shuffle_seed=N URL param — used by generate-priority-pages.js to produce variants
-    //   3. random — fresh seed on every page mount so non-indexed (live API) pages
-    //      show different products on each refresh. sessionStorage is intentionally
-    //      NOT used here: persisting the seed across reloads caused the same variant
-    //      slot to be hit every time, making products appear frozen.
+    //   3. sessionStorage, but ONLY on an initialMismatch recovery — the stale
+    //      -remount case where this mount's own live-fetch (triggered because
+    //      SSR props didn't match the real URL) must not reshuffle the
+    //      products the user was already looking at before they navigated
+    //      away (e.g. to a product page) and hit Back.
+    //   4. random — fresh seed on every normal page mount so non-indexed (live
+    //      API) pages show different products on each refresh. Persisting
+    //      this across ordinary reloads caused the same variant slot to be
+    //      hit every time, making products appear frozen — sessionStorage is
+    //      only consulted above for the initialMismatch recovery case.
     try {
       const workerSeed = (window as unknown as Record<string, unknown>)["__SHUFFLE_SEED__"];
       const urlSeed = new URLSearchParams(window.location.search).get("shuffle_seed");
+      const savedSeed = initialMismatch ? sessionStorage.getItem(SEED_KEY) : null;
       if (typeof workerSeed === "number" && workerSeed >= 1) {
         setSeed(workerSeed);
       } else if (urlSeed && /^\d+$/.test(urlSeed)) {
         const n = parseInt(urlSeed, 10);
         if (n >= 1) setSeed(n);
+      } else if (savedSeed && /^\d+$/.test(savedSeed)) {
+        setSeed(parseInt(savedSeed, 10));
       } else {
-        setSeed(Math.floor(Math.random() * SEED_MAX) + 1);
+        const n = Math.floor(Math.random() * SEED_MAX) + 1;
+        setSeed(n);
+        try { sessionStorage.setItem(SEED_KEY, String(n)); } catch { }
       }
     } catch {
       setSeed(Math.floor(Math.random() * SEED_MAX) + 1);
@@ -325,6 +376,10 @@ export default function StateHome({
     setReady(true);
   }, []);
 
+  // Same-instance back/forward (no remount, no stale-prop risk — that case is
+  // handled synchronously above via initialMismatch) still needs filters
+  // re-synced, since popstate changes the URL without going through
+  // handleFilterChange/pushFiltersToUrl.
   useEffect(() => {
     const handlePopState = () => {
       const cid = new URLSearchParams(window.location.search).get("clickid");
@@ -337,19 +392,7 @@ export default function StateHome({
         setPage(1);
       }
       setMaxPages(1);
-
-      // Browser back/forward changes the URL without going through
-      // handleFilterChange/pushFiltersToUrl, so `filters` state was never
-      // re-synced — the page kept showing whatever filters were active
-      // right before the user navigated away (e.g. to a product page),
-      // even though the address bar now shows a different filter combo.
-      const slugParts = window.location.pathname
-        .replace(/^\/listings\/?/, "")
-        .split("/")
-        .filter(Boolean);
-      const query: Record<string, string> = {};
-      new URLSearchParams(window.location.search).forEach((v, k) => { query[k] = v; });
-      setFilters(parseDemoFilters(slugParts, query));
+      setFilters(parseFiltersFromUrl());
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
