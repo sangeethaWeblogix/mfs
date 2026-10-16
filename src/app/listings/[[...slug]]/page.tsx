@@ -72,22 +72,20 @@ export default async function LocationStateDemoPage({
 
   // shuffle_seed is injected by the HTML cache warmer (e.g. ?shuffle_seed=3) so
   // each KV HTML variant gets a genuinely different product pool from WordPress.
-  // 0 for a normal live request — the API call itself goes through the
-  // CF-cached path; freshness for those requests comes from displaySeed below.
+  // Absent that, use a fresh random seed per request — the API applies its own
+  // seed-based ordering, so we just pass it through and render the response
+  // as-is (no local reshuffling on top of it).
   const shuffleSeed = typeof query.shuffle_seed === "string"
     ? (parseInt(query.shuffle_seed, 10) || 0)
     : 0;
-
-  // Local-only re-shuffle seed, fresh per request — reproduces the "different
-  // order every visit" behavior that used to require a client-side re-fetch.
-  const displaySeed = Math.floor(Math.random() * SEED_MAX) + 1;
+  const apiSeed = shuffleSeed > 0 ? shuffleSeed : Math.floor(Math.random() * SEED_MAX) + 1;
 
   const [browseData, initialPool, initialParamsCount, newSeo, usedSeo] = await Promise.all([
     fetchBrowseSectionData(initialFilters),
-    fetchInitialPool(initialFilters, isIndexed, shuffleSeed, displaySeed),
+    fetchInitialPool(initialFilters, isIndexed, apiSeed),
     fetchInitialParamsCount(),
-    isIndexed ? fetchConditionSeo(initialFilters, "New", shuffleSeed) : Promise.resolve(null),
-    isIndexed ? fetchConditionSeo(initialFilters, "Used", shuffleSeed) : Promise.resolve(null),
+    isIndexed ? fetchConditionSeo(initialFilters, "New", apiSeed) : Promise.resolve(null),
+    isIndexed ? fetchConditionSeo(initialFilters, "Used", apiSeed) : Promise.resolve(null),
   ]);
 
   return (

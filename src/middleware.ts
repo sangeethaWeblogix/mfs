@@ -197,19 +197,20 @@
      return render410(request);
    }
 
-   /* 🚫 Listings: forbidden segments, unknown params, OR wrong URL order → 410 */
+   /* 🚫 Listings: forbidden segments OR wrong URL order → 410 */
    if (isListingsPath(url.pathname)) {
      const segments = url.pathname.split('/').filter(Boolean);
      const hasForbiddenSegment = segments.some(s => /(page|feed)/i.test(s));
-
-     const ALLOWED_PARAMS = new Set(['clickid', 'orderby', 'search', 'keyword', 'radius_kms', 'shuffle_seed']);
-     const hasUnknownParam = Array.from(url.searchParams.keys()).some(k => !ALLOWED_PARAMS.has(k.toLowerCase()));
      const hasForbiddenValue = Array.from(url.searchParams.values()).some(v => /(page|feed)/i.test(v));
 
      if (hasForbiddenSegment) {
        return gone404(request);
      }
-     if (hasUnknownParam || hasForbiddenValue) {
+     // Unknown query params (e.g. /listings/?fwrfwrf) are no longer 410'd —
+     // they're just ignored, so arbitrary/unrecognized params don't break
+     // the page. Still 410 if a param's *value* looks like pagination/feed
+     // spoofing (e.g. ?orderby=page-2).
+     if (hasForbiddenValue) {
        return render410(request);
      }
 

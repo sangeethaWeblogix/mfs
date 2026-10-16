@@ -12,7 +12,6 @@ import StateBrowseSection from "./StateBrowseSection";
 import { toStateSlug, stateLabel, type BrowseSectionData } from "./browseSectionShared";
 import StateContent from "./StateContent";
 import { buildApiUrl, buildListingsSlug, buildFilterBreadcrumbs, parseDemoFilters } from "./urlUtils";
-import { seededShuffle } from "./seededShuffle";
 import type { InitialParamsCount } from "./fetchInitialParamsCount";
 // import { useBanners } from "@/components/BannerHandler";
 // import { useBannerTracking } from "@/hooks/useBannerTracking";
@@ -534,19 +533,16 @@ export default function StateHome({
 
         if (isIndexed && !hasFlatProducts) {
           // Indexed pages show Featured/New/Used as separate grids — the pool
-          // endpoint already segments products into these buckets.
-          // seededShuffle reorders each bucket using the client's random seed so
-          // different products appear on each refresh even when the pool-listings
-          // KV cache serves the same JSON for every seed value.
-          const featuredItems = buildFeaturedOrder(seededShuffle(featuredRaw, seed), premiumsRaw, exclusivesRaw);
-          const newItems = seededShuffle(newRaw, seed + 1000);
-          const usedItems = seededShuffle(usedRaw, seed + 2000);
+          // endpoint already segments products into these buckets, in the
+          // order the API's own `seed` param produced. Rendered as-is, no
+          // local reshuffling on top of it.
+          const featuredItems = buildFeaturedOrder(featuredRaw, premiumsRaw, exclusivesRaw);
 
-          setPool({ featured: featuredItems, new: newItems, used: usedItems });
+          setPool({ featured: featuredItems, new: newRaw, used: usedRaw });
         } else {
           // Non-indexed pages get one combined grid instead of a split.
           const combined = buildFeaturedOrder(
-            seededShuffle([...featuredRaw, ...newRaw, ...usedRaw], seed),
+            [...featuredRaw, ...newRaw, ...usedRaw],
             premiumsRaw,
             exclusivesRaw
           );

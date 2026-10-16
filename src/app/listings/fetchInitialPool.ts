@@ -13,7 +13,6 @@
 import { Listing, SeoV2, buildFeaturedOrder, normalizeListing } from "./listingShared";
 import type { InitialPool } from "./home";
 import type { FilterState } from "./StateFilterBar";
-import { seededShuffle } from "./seededShuffle";
 
 const APP_URL         = process.env.NEXT_PUBLIC_APP_URL || "https://www.motorhomesforsale.com.au";
 // Direct WP API — used when seed > 0 to bypass Cloudflare's pool cache (which strips seed).
@@ -51,13 +50,11 @@ function buildApiParams(filters: FilterState, seed: number, perPage = 24): URLSe
 
 /** Parse a raw pool_test JSON response into the InitialPool shape.
  *
- * @param displaySeed  Purely a local re-shuffle seed (mirrors what the client
- *   used to compute randomly on every mount) — it never touches the API
- *   request, so it adds zero extra backend load. Applying it here means the
- *   server-rendered order is already "fresh-looking" per request, so the
- *   client no longer needs its own live re-fetch just to reshuffle.
+ * Product order is whatever the API returns for the given `seed` —
+ * the backend already handles the "different order per visit" randomization
+ * via its own `seed` param, so this no longer reshuffles on top of it.
  */
-function parsePoolJson(json: any, isIndexed: boolean, displaySeed: number): InitialPool | null {
+function parsePoolJson(json: any, isIndexed: boolean): InitialPool | null {
   const seo: SeoV2 | null = json?.seo_v2 ?? null;
   const premiumsRaw: Listing[]   = (json?.premium_products   ?? []).map(normalizeListing);
   const exclusivesRaw: Listing[] = (json?.exclusive_products ?? []).map(normalizeListing);
@@ -87,13 +84,13 @@ function parsePoolJson(json: any, isIndexed: boolean, displaySeed: number): Init
   let usedItems: Listing[] = [];
 
   if (isIndexed && !hasFlatProducts) {
-    featured = buildFeaturedOrder(seededShuffle(featuredRaw, displaySeed), premiumsRaw, exclusivesRaw);
-    newItems  = seededShuffle(newRaw, displaySeed + 1000);
-    usedItems = seededShuffle(usedRaw, displaySeed + 2000);
+    featured = buildFeaturedOrder(featuredRaw, premiumsRaw, exclusivesRaw);
+    newItems  = newRaw;
+    usedItems = usedRaw;
   } else {
     // Non-indexed: combined grid, no slot splitting
     const combined = [...featuredRaw, ...newRaw, ...usedRaw];
-    featured = buildFeaturedOrder(seededShuffle(combined, displaySeed), premiumsRaw, exclusivesRaw);
+    featured = buildFeaturedOrder(combined, premiumsRaw, exclusivesRaw);
     newItems  = [];
     usedItems = [];
   }
@@ -146,25 +143,23 @@ async function fetchFromApi(filters: FilterState, seed: number, perPage = 24): P
 /**
  * Fetch the initial pool for SSR rendering.
  *
- * @param seed        Passed through to the live API — used by the HTML cache
- *                    warmer, which passes ?shuffle_seed=N so each cached HTML
- *                    variant gets a genuinely different product pool. 0 for a
- *                    normal live request (goes through the CF-cached path).
- * @param displaySeed Local-only re-shuffle seed, always a fresh random value
- *                    per request — see parsePoolJson for why this never
- *                    touches the API call itself.
+ * @param seed  The real seed sent to the live API — the backend uses it to
+ *              produce a genuinely different product order per request, so
+ *              the caller should pass a fresh random value for normal live
+ *              requests (or the HTML cache warmer's explicit ?shuffle_seed=N
+ *              for deterministic KV variant generation). The returned order
+ *              is used as-is, with no further client/server reshuffling.
  */
 export async function fetchInitialPool(
   filters: FilterState,
   isIndexed = true,
-  seed = 0,
-  displaySeed = 1
+  seed = 1
 ): Promise<InitialPool | null> {
   const apiJson = await fetchFromApi(filters, seed);
   if (apiJson) {
-    const parsed = parsePoolJson(apiJson, isIndexed, displaySeed);
+    const parsed = parsePoolJson(apiJson, isIndexed);
     if (parsed) {
-      console.log(`[fetchInitialPool] API OK seed=${seed} displaySeed=${displaySeed} (${parsed.featured.length + parsed.new.length + parsed.used.length} products)`);
+      console.log(`[fetchInitialPool] API OK seed=${seed} (${parsed.featured.length + parsed.new.length + parsed.used.length} products)`);
       return parsed;
     }
   }
