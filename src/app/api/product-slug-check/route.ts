@@ -17,12 +17,16 @@ export async function GET(request: NextRequest) {
   if (!slug) return NextResponse.json({ exists: null }, { status: 400 });
 
   try {
+    // Short revalidate window — every /product/[slug]/ view hits this same
+    // endpoint twice (this check, then the page's own fetchProductDetail),
+    // so caching lets the second call reuse this one instead of doubling
+    // load on the backend's origin server.
     const res = await fetch(`${API_BASE}/${encodeURIComponent(slug)}`, {
       headers: {
         Accept: "application/json",
         ...(API_KEY && { "X-Secret-Key": API_KEY }),
       },
-      cache: "no-store",
+      next: { revalidate: 30 },
     });
 
     const raw = await res.text();

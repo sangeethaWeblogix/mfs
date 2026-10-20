@@ -7,6 +7,13 @@ const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
 const API_KEY = process.env.MFS_API_KEY;
 
 async function fetchPoolTest(url: string, signal: AbortSignal) {
+  // Short revalidate window instead of no-store: every listings-page visit
+  // and filter change hits this with a real random/live seed, so without any
+  // caching it was hitting the backend's own origin server fresh on every
+  // single request — sustained load that tripped its bot-protection, even for
+  // this already syd1-pinned route. A short window still feels live for
+  // filter changes while letting concurrent/repeat hits on the exact same
+  // (filters, seed) combination dedupe instead of each re-hitting the origin.
   const res = await fetch(url, {
     signal,
     headers: {
@@ -14,7 +21,7 @@ async function fetchPoolTest(url: string, signal: AbortSignal) {
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
       ...(API_KEY && { "X-Secret-Key": API_KEY }),
     },
-    cache: "no-store",
+    next: { revalidate: 20 },
   });
 
   const raw = await res.text();

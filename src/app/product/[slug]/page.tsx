@@ -195,10 +195,13 @@ const fetchProductDetail = cache(async (slug: string) => {
   const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE!;
   const API_KEY = process.env.MFS_API_KEY;
   try {
+    // Short revalidate window — middleware's own existence check hits this
+    // same endpoint first, so caching lets this call reuse that one instead
+    // of doubling load on the backend's origin server for every page view.
     const res = await fetch(
       `${API_BASE}/${encodeURIComponent(slug)}`,
       {
-        cache: "no-store",
+        next: { revalidate: 30 },
         headers: {
           Accept: "application/json",
           ...(API_KEY && { "X-Secret-Key": API_KEY }),
@@ -242,7 +245,7 @@ async function fetchSimilarProducts(slug: string) {
     const res = await fetch(
       `${API_BASE}/${encodeURIComponent(slug)}/similar`,
       {
-        cache: "no-store",
+        next: { revalidate: 60 },
         headers: {
           Accept: "application/json",
           ...(API_KEY && { "X-Secret-Key": API_KEY }),

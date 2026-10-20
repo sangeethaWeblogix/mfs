@@ -9,8 +9,10 @@ async function fetchWithTimeout(url: string) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
+    // Short revalidate window — also means a failed attempt's retries below
+    // don't each add a fresh hit to the backend's origin server.
     return await fetch(url, {
-      cache: "no-store",
+      next: { revalidate: 60 },
       headers: {
         Accept: "application/json",
         ...(API_KEY && { "X-Secret-Key": API_KEY }),

@@ -110,6 +110,15 @@ async function fetchFromApi(filters: FilterState, seed: number, perPage = 24): P
   // When a specific seed is requested, the Cloudflare Worker's pool cache must be
   // bypassed — it normalises its cache key by deleting `seed`, so every seed would
   // return the same cached pool. Call WordPress directly instead.
+  //
+  // Every normal visit now sends a real random seed (1-15) instead of the old
+  // hardcoded 0, so this branch runs on every single listings-page load — a
+  // sustained, uncached hit to the backend's own origin server on every visit,
+  // which is what started tripping its bot-protection. A short revalidate
+  // window lets Next.js's own fetch cache dedupe identical (filters, seed)
+  // combinations for a little while — the API's real order for that seed is
+  // still what gets shown, nothing is reshuffled locally — instead of hitting
+  // the origin fresh on every single request.
   if (seed > 0 && WP_API_BASE) {
     try {
       const res = await fetch(`${WP_API_BASE}/pool?${params.toString()}`, {
@@ -117,7 +126,7 @@ async function fetchFromApi(filters: FilterState, seed: number, perPage = 24): P
           Accept: "application/json",
           ...(WP_API_KEY && { "X-Secret-Key": WP_API_KEY }),
         },
-        cache: "no-store",
+        next: { revalidate: 60 },
       });
       if (!res.ok) return null;
       const raw = await res.text();

@@ -60,6 +60,11 @@ export async function fetchHomeFeatured(params: {
   const timeoutId = setTimeout(() => controller.abort(), 10000);
 
   try {
+    // Every home page visit sends a real random seed, so without caching this
+    // hits the backend's own origin server fresh on every single request —
+    // sustained load that trips its bot-protection. A short revalidate window
+    // lets Next.js's own fetch cache dedupe identical (type, seed) combinations
+    // for a little while instead of hitting the origin on every visit.
     const res = await fetch(url, {
       signal: controller.signal,
       headers: {
@@ -68,7 +73,7 @@ export async function fetchHomeFeatured(params: {
         ...(API_KEY && { "X-Secret-Key": API_KEY }),
         ...(visitorIp && { "X-Visitor-IP": visitorIp }),
       },
-      cache: "no-store",
+      next: { revalidate: 60 },
     });
 
     clearTimeout(timeoutId);
