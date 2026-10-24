@@ -351,7 +351,7 @@ export default function ProductDetailDemo({ data, similarData }: Props) {
     makeRow("Model",            "Model"),
     makeRow("Years",            "Years"),
     makeRow("Conditions",       "Conditions"),
-    makeRow("Body Type",        "Body Type"),
+    // makeRow("Body Type",     "Body Type"), // always "Motorhomes" — not useful to show
     makeRow("RV Class",         "RV Class"),
     makeRow("Length",           "Length"),
     makeRow("Width",            "Width"),

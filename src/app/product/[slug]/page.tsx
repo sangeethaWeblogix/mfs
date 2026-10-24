@@ -150,7 +150,7 @@ function normalizeProductDetail(raw: any) {
     attr("Model", isCustomBuilt ? null : raw.model?.name),
     attr("Years", raw.year),
     attr("Conditions", raw.condition),
-    attr("Body Type", raw.body_type),
+    // attr("Body Type", raw.body_type), // always "Motorhomes" — not useful to show
     attr("RV Class", raw.rv_class),
     attr("Length", withFt(raw.length)),
     attr("Width", raw.width),
