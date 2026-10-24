@@ -1,3 +1,5 @@
+import { INDEXABLE_URLS } from "@/utils/seo/indexable-urls";
+
 const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
 const API_KEY = process.env.MFS_API_KEY;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.motorhomesforsale.com.au";
@@ -35,6 +37,22 @@ export async function fetchSitemapPaths(type: string): Promise<string[]> {
   }
 }
 
+/**
+ * /listings/ filter pages have their own noindex policy, driven by whether
+ * the exact path is in the curated src/app/url.csv (INDEXABLE_URLS — the
+ * same set metaFromSlug() checks to decide the page's own <meta
+ * name="robots"> tag). The backend's /sitemap/{type} endpoint only knows
+ * "this combination has products", not whether it's SEO-curated as
+ * indexable, so without this filter a sitemap can list a real, working page
+ * whose own meta tag says noindex — exactly what Ahrefs flags as "Noindex
+ * page in sitemap". /product/ pages have no such policy (always indexable),
+ * so this only applies when prefix is "listings".
+ */
+function filterIndexable(paths: string[], prefix: "listings" | "product"): string[] {
+  if (prefix !== "listings") return paths;
+  return paths.filter((path) => INDEXABLE_URLS.has(`/listings/${path}`));
+}
+
 export function buildSitemapXml(
   paths: string[],
   prefix: "listings" | "product",
@@ -42,7 +60,7 @@ export function buildSitemapXml(
   priority = "0.7"
 ): string {
   const lastmod = new Date().toISOString();
-  const urls = paths
+  const urls = filterIndexable(paths, prefix)
     .map(
       (path) => `
   <url>
