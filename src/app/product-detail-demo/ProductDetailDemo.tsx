@@ -324,6 +324,39 @@ export default function ProductDetailDemo({ data, similarData }: Props) {
   type DetailLink = { href: string; text: string };
   type DetailRow = { label: string; value: string; url: string; links?: DetailLink[] };
 
+  // toInt() strips everything but digits, which mangles a decimal value like
+  // "24.25 ft" into 2425 — this keeps the decimal point so the actual value
+  // survives before it gets snapped to a band below.
+  const toFloat = (s: string): number | null => {
+    const n = parseFloat(String(s).replace(/[^\d.]/g, ""));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+
+  // Band pages only exist for a curated set of thresholds (src/app/url.csv —
+  // the same list that decides whether a /listings/ band page is actually
+  // indexable), not for the product's exact attribute value — a 4,495kg GVM
+  // has no "/listings/under-4495-kg-gvm/" page. Snap to the smallest curated
+  // "under" threshold the value fits inside, or the largest "over" threshold
+  // it clears when it's too high for any "under" band.
+  const snapToBand = (value: number, under: number[], over: number[]): string | null => {
+    const fitUnder = under.filter((t) => value <= t).sort((a, b) => a - b)[0];
+    if (fitUnder !== undefined) return `under-${fitUnder}`;
+    const fitOver = over.filter((t) => value > t).sort((a, b) => b - a)[0];
+    if (fitOver !== undefined) return `over-${fitOver}`;
+    return null;
+  };
+
+  const LENGTH_UNDER = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28];
+  const LENGTH_OVER = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 30];
+  const GVM_UNDER = [2250, 2500, 2750, 3000, 3500];
+  const GVM_OVER = [1000, 1250, 1500, 1750, 2000, 2250, 2500, 2750, 3000, 3500, 8000];
+
+  const sleepBandSlug = (n: number): string => {
+    if (n <= 2) return "2-people-sleeping-capacity";
+    if (n >= 6) return "over-5-people-sleeping-capacity";
+    return `${n}-people-sleeping-capacity`;
+  };
+
   const makeDetailUrl = (label: string, value: string, apiUrl: string): string => {
     const v = value.trim();
     const L = label.toLowerCase();
@@ -334,9 +367,9 @@ export default function ProductDetailDemo({ data, similarData }: Props) {
     if (L.trim() === "vehicle make") return v ? `/listings/${slugify(v)}-vehicle-make/` : "";
     if (L === "model") { const mk = pickFull("Make"); const mkSlug = mk.url?.trim().replace(/^\/+|\/+$/g, "") || slugify(mk.value); return v ? `/listings/${mkSlug}/${modelSlugify(v)}/` : ""; }
     if (L === "condition" || L === "conditions") return v ? `/listings/${slugify(v)}-condition/` : "";
-    if (L === "sleeping capacity" || L === "sleep" || L === "sleeps") { const n = toInt(v); return n ? `/listings/under-${n}-people-sleeping-capacity/` : ""; }
-    if (L === "length") { const n = toInt(v); return n ? `/listings/under-${n}-length-in-feet/` : ""; }
-    if (L === "gvm") { const n = toInt(v); return n ? `/listings/under-${n}-kg-gvm/` : ""; }
+    if (L === "sleeping capacity" || L === "sleep" || L === "sleeps") { const n = toInt(v); return n ? `/listings/${sleepBandSlug(n)}/` : ""; }
+    if (L === "length") { const n = toFloat(v); const band = n ? snapToBand(n, LENGTH_UNDER, LENGTH_OVER) : null; return band ? `/listings/${band}-length-in-feet/` : ""; }
+    if (L === "gvm") { const n = toFloat(v); const band = n ? snapToBand(n, GVM_UNDER, GVM_OVER) : null; return band ? `/listings/${band}-kg-gvm/` : ""; }
     return "";
   };
 
