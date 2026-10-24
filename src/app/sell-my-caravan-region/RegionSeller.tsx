@@ -142,7 +142,7 @@ export default function RegionSeller({ region }: RegionSellerProps) {
             {[
               { img: "/images/chat2.png", title: "Direct Buyer Contact", desc: "Communicate directly with buyers, no middleman." },
               { img: "/images/calendar.png", title: "Live Until Sold", desc: "Your listing stays live until your motorhome is sold." },
-              { img: "/images/caravan.png", title: "Motorhome-Only Marketplace", desc: "Reach engaged motorhome buyers actively looking to buy motorhomes." },
+              { img: "/images/motorhome.png", title: "Motorhome-Only Marketplace", desc: "Reach engaged motorhome buyers actively looking to buy motorhomes." },
               { img: "/images/dollar.png", title: "Keep 100% of Your Sale", desc: "Pay only a one-time fee for maximum value. No hidden costs." },
             ].map((item, i) => (
               <div className="demo-feature-card" key={i}>

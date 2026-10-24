@@ -1231,7 +1231,7 @@ tr {
     overflow: hidden;
 }
 .blog-sidebar-cta--sell {
-    background: url('/images/seller_caravan.jpg') center/cover no-repeat;
+    background: url('/images/seller_motorhome.jpg') center/cover no-repeat;
 }
 .blog-sidebar-cta.blog-sidebar-cta--sell:before {
     background: linear-gradient(135deg, #000000a6 0%, #0000 100%);

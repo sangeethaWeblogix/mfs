@@ -155,7 +155,7 @@ export default function StateSeller({ state }: StateSellerProps) {
             {[
               { img: "/images/chat2.png", title: "Direct Buyer Contact", desc: "Communicate directly with buyers, no middleman." },
               { img: "/images/calendar.png", title: "Live Until Sold", desc: "Your listing stays live until your motorhome is sold." },
-              { img: "/images/caravan.png", title: "Motorhome-Only Marketplace", desc: "Reach engaged motorhome buyers actively looking to buy motorhomes." },
+              { img: "/images/motorhome.png", title: "Motorhome-Only Marketplace", desc: "Reach engaged motorhome buyers actively looking to buy motorhomes." },
               { img: "/images/dollar.png", title: "Keep 100% of Your Sale", desc: "Pay only a one-time fee for maximum value. No hidden costs." },
             ].map((item, i) => (
               <div className="demo-feature-card" key={i}>
@@ -185,7 +185,7 @@ export default function StateSeller({ state }: StateSellerProps) {
                 {CITY_LINKS.map((c) => (
                   <div key={c.label} className="demo-city-item">
                     <span className="demo-city-icon">
-                      <img src="/images/caravan.png" alt="" />
+                      <img src="/images/motorhome.png" alt="" />
                     </span>
                     <h3 className="demo-city-label">
                       <a

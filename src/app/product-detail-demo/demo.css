@@ -705,7 +705,7 @@
 
 /* Thinking of selling — below the sidebar card */
 .pdd-sidebar__sell {
-    background: linear-gradient(#00000087 20%, #00000000 100%), url(/images/seller_caravan.jpg) center / cover no-repeat;
+    background: linear-gradient(#00000087 20%, #00000000 100%), url(/images/seller_motorhome.jpg) center / cover no-repeat;
     border-radius: 10px;
     flex-direction: column;
     justify-content: flex-start;
