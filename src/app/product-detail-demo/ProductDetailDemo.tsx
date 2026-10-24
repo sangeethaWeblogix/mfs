@@ -351,6 +351,7 @@ export default function ProductDetailDemo({ data, similarData }: Props) {
     makeRow("Model",            "Model"),
     makeRow("Years",            "Years"),
     makeRow("Conditions",       "Conditions"),
+    makeRow("Body Type",        "Body Type"),
     makeRow("RV Class",         "RV Class"),
     makeRow("Length",           "Length"),
     makeRow("Width",            "Width"),
@@ -365,9 +366,17 @@ export default function ProductDetailDemo({ data, similarData }: Props) {
     makeRow("Engine Torque",    "Engine Torque"),
     makeRow("Fuel Type",        "Fuel Type"),
     makeRow("Transmission",     "Transmission"),
+    makeRow("Drivetrain",       "Drivetrain"),
+    makeRow("Suspension",       "Suspension"),
+    makeRow("Tyre Size",        "Tyre Size"),
+    makeRow("Brakes",           "Brakes"),
     makeRow("Odometer",         "Odometer"),
     makeRow("Sleeps",           "sleeps", "Sleeping Capacity"),
     makeRow("Seats",            "Seats"),
+    makeRow("Fridge",           "Fridge"),
+    makeRow("GPS",              "GPS"),
+    makeRow("Toilet",           "Toilet"),
+    makeRow("Shower",           "Shower"),
   ].filter(r => r.value);
 
   const locationCity  = product.region?.value?.replace(/-/g, " ") ?? "";
