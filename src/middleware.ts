@@ -154,8 +154,8 @@
    if (filters.sleeps) p.set('sleep', `${filters.sleeps}`);
    if (filters.from_sleep) p.set('from_sleep', `${filters.from_sleep}`);
    if (filters.to_sleep) p.set('to_sleep', `${filters.to_sleep}`);
-   if (filters.acustom_fromyears) p.set('acustom_fromyears', `${filters.acustom_fromyears}`);
-   if (filters.acustom_toyears) p.set('acustom_toyears', `${filters.acustom_toyears}`);
+   if (filters.acustom_fromyears) p.set('from_year', `${filters.acustom_fromyears}`);
+   if (filters.acustom_toyears) p.set('to_year', `${filters.acustom_toyears}`);
    return p;
  }
 

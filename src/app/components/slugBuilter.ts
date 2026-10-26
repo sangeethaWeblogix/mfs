@@ -118,11 +118,15 @@ export function buildSlugFromFilters(f: Filters): string {
 const toYear = asNum(f.acustom_toyears);
 
 if (fromYear !== undefined && toYear !== undefined) {
-  segments.push(`${fromYear}-${toYear}-caravans-range`);
+  segments.push(
+    fromYear === toYear
+      ? `${fromYear}-motorhomes-range`
+      : `${fromYear}-${toYear}-motorhomes-range`
+  );
 } else if (fromYear !== undefined) {
-  segments.push(`year-from-${fromYear}-caravans-range`);
+  segments.push(`year-from-${fromYear}-motorhomes-range`);
 } else if (toYear !== undefined) {
-  segments.push(`year-to-${toYear}-caravans-range`);
+  segments.push(`year-to-${toYear}-motorhomes-range`);
 }
   const query = new URLSearchParams();
 

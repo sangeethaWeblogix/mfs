@@ -26,8 +26,8 @@ export function buildApiUrl(base: string, filters: FilterState, seed: number, lo
   if (filters.maxKg)              params.set("to_gvm",             String(filters.maxKg));
   if (filters.from_sleep)         params.set("from_sleep",         String(filters.from_sleep));
   if (filters.to_sleep)           params.set("to_sleep",           String(filters.to_sleep));
-  if (filters.acustom_fromyears)  params.set("acustom_fromyears",  String(filters.acustom_fromyears));
-  if (filters.acustom_toyears)    params.set("acustom_toyears",    String(filters.acustom_toyears));
+  if (filters.acustom_fromyears)  params.set("from_year",  String(filters.acustom_fromyears));
+  if (filters.acustom_toyears)    params.set("to_year",    String(filters.acustom_toyears));
   if (filters.from_length)        params.set("from_length",        String(filters.from_length));
   if (filters.to_length)          params.set("to_length",          String(filters.to_length));
   // Backend free-text search only recognizes `search` (see production's
@@ -133,7 +133,11 @@ const BREADCRUMB_PRIORITY: Array<{
   {
     label: (f) => {
       if (!f.acustom_fromyears && !f.acustom_toyears) return null;
-      if (f.acustom_fromyears && f.acustom_toyears) return `${f.acustom_fromyears} – ${f.acustom_toyears}`;
+      if (f.acustom_fromyears && f.acustom_toyears) {
+        return String(f.acustom_fromyears) === String(f.acustom_toyears)
+          ? String(f.acustom_fromyears)
+          : `${f.acustom_fromyears} – ${f.acustom_toyears}`;
+      }
       if (f.acustom_fromyears) return `From ${f.acustom_fromyears}`;
       return `Upto ${f.acustom_toyears}`;
     },

@@ -204,20 +204,27 @@ export function parseSlugToFilters(
       }
       return;
     }
-    // Year range: 2020-2025-caravans-range, year-from-2025-caravans-range, year-to-2025-caravans-range
-    if (part.includes("-caravans-range")) {
-      const bothMatch = part.match(/^(\d{4})-(\d{4})-caravans-range$/);
+    // Year range: 2020-2025-motorhomes-range, 2019-motorhomes-range (single
+    // year — from === to), year-from-2025-motorhomes-range, year-to-2025-motorhomes-range
+    if (part.includes("-motorhomes-range")) {
+      const bothMatch = part.match(/^(\d{4})-(\d{4})-motorhomes-range$/);
       if (bothMatch) {
         filters.acustom_fromyears = bothMatch[1];
         filters.acustom_toyears = bothMatch[2];
         return;
       }
-      const fromMatch = part.match(/^year-from-(\d{4})-caravans-range$/);
+      const singleMatch = part.match(/^(\d{4})-motorhomes-range$/);
+      if (singleMatch) {
+        filters.acustom_fromyears = singleMatch[1];
+        filters.acustom_toyears = singleMatch[1];
+        return;
+      }
+      const fromMatch = part.match(/^year-from-(\d{4})-motorhomes-range$/);
       if (fromMatch) {
         filters.acustom_fromyears = fromMatch[1];
         return;
       }
-      const toMatch = part.match(/^year-to-(\d{4})-caravans-range$/);
+      const toMatch = part.match(/^year-to-(\d{4})-motorhomes-range$/);
       if (toMatch) {
         filters.acustom_toyears = toMatch[1];
         return;

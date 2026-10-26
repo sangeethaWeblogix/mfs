@@ -306,7 +306,7 @@ export default function ClientLogger({
     // ✅ Always force clean path for Year (ignore API URL)
     if (L === "year" || L === "years") {
       const s = toInt(v);
-      return s ? [{ href: `/listings/${s}-caravans-range/`, text: v }] : null;
+      return s ? [{ href: `/listings/${s}-motorhomes-range/`, text: v }] : null;
     }
 
     // ✅ Only use API URL for fields that are NOT year-related

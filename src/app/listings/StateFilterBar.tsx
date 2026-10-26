@@ -81,8 +81,8 @@ const buildMakeCountParams = (filters: FilterState): URLSearchParams => {
   if (filters.to_price)          params.set("to_price", String(filters.to_price));
   if (filters.minKg)             params.set("from_gvm", String(filters.minKg));
   if (filters.maxKg)             params.set("to_gvm", String(filters.maxKg));
-  if (filters.acustom_fromyears) params.set("acustom_fromyears", String(filters.acustom_fromyears));
-  if (filters.acustom_toyears)   params.set("acustom_toyears", String(filters.acustom_toyears));
+  if (filters.acustom_fromyears) params.set("from_year", String(filters.acustom_fromyears));
+  if (filters.acustom_toyears)   params.set("to_year", String(filters.acustom_toyears));
   if (filters.from_length)       params.set("from_length", String(filters.from_length));
   if (filters.to_length)         params.set("to_length", String(filters.to_length));
   if (filters.from_sleep)        params.set("from_sleep", String(filters.from_sleep));
@@ -243,8 +243,8 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
     if (currentFilters.to_price)          params.set("to_price", String(currentFilters.to_price));
     if (currentFilters.minKg)             params.set("from_gvm", String(currentFilters.minKg));
     if (currentFilters.maxKg)             params.set("to_gvm", String(currentFilters.maxKg));
-    if (currentFilters.acustom_fromyears) params.set("acustom_fromyears", String(currentFilters.acustom_fromyears));
-    if (currentFilters.acustom_toyears)   params.set("acustom_toyears", String(currentFilters.acustom_toyears));
+    if (currentFilters.acustom_fromyears) params.set("from_year", String(currentFilters.acustom_fromyears));
+    if (currentFilters.acustom_toyears)   params.set("to_year", String(currentFilters.acustom_toyears));
     if (currentFilters.from_length)       params.set("from_length", String(currentFilters.from_length));
     if (currentFilters.to_length)         params.set("to_length", String(currentFilters.to_length));
     if (currentFilters.from_sleep)        params.set("from_sleep", String(currentFilters.from_sleep));
