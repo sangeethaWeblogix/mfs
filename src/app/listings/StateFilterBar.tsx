@@ -317,6 +317,15 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
     "type"|"location"|"price"|"gvm"|"make"|"engineMake"|"condition"|"sleep"|"allFilters"|null
   >(null);
 
+  // Chips for filters without a toolbar button (year, length) open the
+  // All-filters modal scrolled to that filter's section.
+  const [allFiltersFocus, setAllFiltersFocus] = useState<string | null>(null);
+  useEffect(() => {
+    if (openModal !== "allFilters" || !allFiltersFocus) return;
+    document.querySelector(`.filter-modal [data-filter-field="${allFiltersFocus}"]`)?.scrollIntoView({ block: "start" });
+    setAllFiltersFocus(null);
+  }, [openModal, allFiltersFocus]);
+
   // Regions for the state currently being viewed — in the standalone Location
   // modal's region sub-view, or the State/Region selects inside the combined
   // Filters modal. params-count only returns a region breakdown when scoped
@@ -444,6 +453,16 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
     .map(rc => ({ name: rc.name, value: rc.slug }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  // State/region chips open straight into the region list, but regions are
+  // fetched on demand — once they arrive, drop back to the state list if the
+  // applied state turns out to have none.
+  const regionsFromChipRef = useRef(false);
+  useEffect(() => {
+    if (!regionsFromChipRef.current || openModal !== "location" || locationSubView !== "regions" || !activeRegionCounts) return;
+    regionsFromChipRef.current = false;
+    if (filteredRegions.length === 0) setLocationSubView("states");
+  }, [openModal, locationSubView, activeRegionCounts, filteredRegions.length]);
+
   // When a make filter is active, narrow the state list to only states with
   // count > 0 for that make. Falls back to the full list when no make is set
   // (global /listings/ page) or before the first API response arrives.
@@ -451,6 +470,12 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
     ? states.filter(s => stateCounts.some(sc => sc.slug === s.value && sc.count > 0))
     : states
   ).slice().sort((a, b) => a.name.localeCompare(b.name));
+
+  // Moves the applied make/model to the top of its list (only when not searching).
+  const pinToTop = <T extends { slug: string }>(list: T[], slug?: string): T[] => {
+    const i = slug ? list.findIndex(x => x.slug === slug) : -1;
+    return i > 0 ? [list[i], ...list.slice(0, i), ...list.slice(i + 1)] : list;
+  };
 
   const makeSource  = makeCounts.length > 0 ? makeCounts : makes.map(m => ({ name: m.name, slug: m.slug, count: 0 }));
   const filteredMakes = makeSearch
@@ -464,7 +489,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
             return rank(an) - rank(bn);
           });
       })()
-    : makeSource.slice().sort((a, b) => a.name.localeCompare(b.name));
+    : pinToTop(makeSource.slice().sort((a, b) => a.name.localeCompare(b.name)), currentFilters.make);
   const modelSource = modelCounts;
   const filteredModels = modelSearch
     ? (() => {
@@ -477,7 +502,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
             return rank(an) - rank(bn);
           });
       })()
-    : modelSource.slice().sort((a, b) => a.name.localeCompare(b.name));
+    : pinToTop(modelSource.slice().sort((a, b) => a.name.localeCompare(b.name)), tempMake === currentFilters.make ? currentFilters.model : undefined);
 
   const filteredVehicleMakes = engineMakeSearch
     ? (() => {
@@ -490,7 +515,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
             return rank(an) - rank(bn);
           });
       })()
-    : vehicleMakeCounts.slice().sort((a, b) => a.name.localeCompare(b.name));
+    : pinToTop(vehicleMakeCounts.slice().sort((a, b) => a.name.localeCompare(b.name)), currentFilters.engine_make);
 
   // Custom Built's Vehicle Make list inside the Make & Model modal — shares
   // the modelSearch box (same UI slot the Model list would otherwise use).
@@ -505,7 +530,18 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
             return rank(an) - rank(bn);
           });
       })()
-    : customBuiltVehicleMakes.slice().sort((a, b) => a.name.localeCompare(b.name));
+    : pinToTop(customBuiltVehicleMakes.slice().sort((a, b) => a.name.localeCompare(b.name)), tempMake === currentFilters.make ? currentFilters.engine_make : undefined);
+
+  // Applied condition/state/region first in their lists too.
+  const pinFirst = <T,>(list: readonly T[], pinned: (x: T) => boolean): T[] =>
+    [...list.filter(pinned), ...list.filter(x => !pinned(x))];
+  // Hyphens normalized — state names/slugs come hyphenated ("New-south-wales") but suburb-derived filters use spaces.
+  const norm = (s: string) => s.replace(/-/g, " ").toLowerCase();
+  const isApplied = (o: { name: string; value: string }, applied?: string) =>
+    !!applied && (norm(o.name) === norm(applied) || norm(o.value) === norm(applied));
+  const conditionOptions = pinFirst(["New", "Used"] as const, c => c.toLowerCase() === currentFilters.condition?.toLowerCase());
+  const locationStates   = pinFirst(visibleStates, s => isApplied(s, currentFilters.state));
+  const locationRegions  = pinFirst(filteredRegions, r => isApplied(r, currentFilters.region));
 
   /* ── Core update fn ── */
   const updateFiltersAndURL = (updates: Partial<FilterState>) => {
@@ -546,11 +582,12 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
   const handleSleepClear  = () => { setTempSleepFrom(null); setTempSleepTo(null); updateFiltersAndURL({ from_sleep: undefined, to_sleep: undefined }); setOpenModal(null); };
 
   /* ── Make ── */
-  const handleMakeOpen = () => {
+  // Chips open straight into the model list of the applied make; the Make button opens the make list.
+  const handleMakeOpen = (view: "makes" | "models" = "makes") => {
     setTempMake(currentFilters.make ?? null);
     setTempModel(currentFilters.model ?? null);
     setTempEngineMake(currentFilters.engine_make ?? null);
-    setMakeSearch(""); setModelSearch(""); setMakeSubView("makes"); setOpenModal("make");
+    setMakeSearch(""); setModelSearch(""); setMakeSubView(view === "models" && currentFilters.make ? "models" : "makes"); setOpenModal("make");
   };
   const handleMakeSearch = () => {
     const isCustomBuilt = tempMake === CUSTOM_BUILT_SLUG;
@@ -581,7 +618,8 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
   const handleEngineMakeClear  = () => { setTempEngineMake(null); updateFiltersAndURL({ engine_make: undefined }); setOpenModal(null); };
 
   /* ── Location ── */
-  const handleLocationOpen = () => {
+  // State/region chips open straight into the applied state's region list; the Location button opens the state list.
+  const handleLocationOpen = (view: "states" | "regions" = "states") => {
     const f = currentFilters;
     const matchedState = states.find(s => s.name?.toLowerCase() === (f.state ?? "").toLowerCase() || s.value?.toLowerCase() === (f.state ?? "").toLowerCase());
     setTempState(matchedState?.name ?? f.state ?? null);
@@ -603,7 +641,11 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
     setSuburbLocationSuggestions([]);
     setShowSuburbSuggestions(false);
     setTempSuburbRadius(f.radius_kms ? Number(f.radius_kms) : RADIUS_OPTIONS[0]);
-    setLocationSubView("states");
+    // Regions aren't on `states` here (fetched per state) — use the cache when present, else let the effect above fall back.
+    const cachedRegions = matchedState ? regionCountsByState[matchedState.value.toLowerCase()] : undefined;
+    const hasRegions = !!matchedState && (cachedRegions === undefined || cachedRegions.some(r => r.count > 0));
+    regionsFromChipRef.current = view === "regions" && hasRegions;
+    setLocationSubView(regionsFromChipRef.current ? "regions" : "states");
     setOpenModal("location");
   };
   const handleLocationSearch = () => { updateFiltersAndURL({ state: tempState?.toLowerCase() ?? undefined, region: tempRegion?.toLowerCase() ?? tempRegionRaw?.toLowerCase() ?? undefined, suburb: undefined, pincode: undefined }); setOpenModal(null); };
@@ -616,7 +658,8 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
   };
 
   /* ── All Filters (combined modal) ── */
-  const handleAllFiltersOpen = () => {
+  const handleAllFiltersOpen = (focusField?: string) => {
+    setAllFiltersFocus(focusField ?? null);
     setTempCondition(currentFilters.condition?.toLowerCase() ?? null);
     setTempPriceFrom(currentFilters.from_price ? Number(currentFilters.from_price) : null);
     setTempPriceTo(currentFilters.to_price ? Number(currentFilters.to_price) : null);
@@ -724,7 +767,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
         <div className="container">
           <div className="search-bar">
             {/* Filters button — matches /listings/ design */}
-            <button className="filter-btn" onClick={handleAllFiltersOpen}>
+            <button className="filter-btn" onClick={() => handleAllFiltersOpen()}>
               {activeFilterCount > 0 ? (
                 <span>{activeFilterCount}</span>
               ) : (
@@ -737,7 +780,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
             <div className="filter-row" style={{ flex: 1, marginBottom: 0 }}>
               <div className="slider-wrapper">
                 <div className="filter-swiper">
-                  <button className={`tag${(currentFilters.state || currentFilters.region || currentFilters.suburb) ? " active" : ""}`} onClick={handleLocationOpen}>
+                  <button className={`tag${(currentFilters.state || currentFilters.region || currentFilters.suburb) ? " active" : ""}`} onClick={() => handleLocationOpen()}>
                     Location
                     {(currentFilters.state || currentFilters.region || currentFilters.suburb) && <span className="active_filter"><i className="bi bi-circle-fill" /></span>}
                   </button>
@@ -747,7 +790,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
                     {currentFilters.condition && <span className="active_filter"><i className="bi bi-circle-fill" /></span>}
                   </button>
 
-                  <button className={`tag${currentFilters.make ? " active" : ""}`} onClick={handleMakeOpen}>
+                  <button className={`tag${currentFilters.make ? " active" : ""}`} onClick={() => handleMakeOpen()}>
                     Motorhome Make
                     {currentFilters.make && <span className="active_filter"><i className="bi bi-circle-fill" /></span>}
                   </button>
@@ -789,7 +832,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
           <div className="active-chips-row">
             {currentFilters.make && (
               <span className={`active-chip${removingChip === "make" ? " chip-removing" : ""}`}>
-                <span className="chip-label" onClick={handleMakeOpen}>
+                <span className="chip-label" onClick={() => handleMakeOpen("models")}>
                   {toTitleCase(
                     makeCounts.find(m => m.slug === currentFilters.make)?.name ??
                       makes.find(m => m.slug === currentFilters.make)?.name ??
@@ -801,7 +844,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
             )}
             {currentFilters.model && (
               <span className={`active-chip${removingChip === "model" ? " chip-removing" : ""}`}>
-                <span className="chip-label" onClick={handleMakeOpen}>
+                <span className="chip-label" onClick={() => handleMakeOpen("models")}>
                   {toTitleCase(
                     lastModelName ??
                       modelCounts.find(m => m.slug === currentFilters.model)?.name ??
@@ -825,19 +868,19 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
             )}
             {currentFilters.state && (
               <span className={`active-chip${removingChip === "state" ? " chip-removing" : ""}`}>
-                <span className="chip-label" onClick={handleLocationOpen}>{toTitleCase(currentFilters.state.replace(/-/g, " "))}</span>
+                <span className="chip-label" onClick={() => handleLocationOpen("regions")}>{toTitleCase(currentFilters.state.replace(/-/g, " "))}</span>
                 <span className="chip-close" onClick={() => removeChip("state", { state:undefined, region:undefined, suburb:undefined, pincode:undefined, radius_kms:undefined })}>×</span>
               </span>
             )}
             {currentFilters.region && (
               <span className={`active-chip${removingChip === "region" ? " chip-removing" : ""}`}>
-                <span className="chip-label" onClick={handleLocationOpen}>{toTitleCase(currentFilters.region.replace(/-/g, " "))}</span>
+                <span className="chip-label" onClick={() => handleLocationOpen("regions")}>{toTitleCase(currentFilters.region.replace(/-/g, " "))}</span>
                 <span className="chip-close" onClick={() => removeChip("region", { region:undefined, suburb:undefined, pincode:undefined, radius_kms:undefined })}>×</span>
               </span>
             )}
             {currentFilters.suburb && (
               <span className={`active-chip${removingChip === "suburb" ? " chip-removing" : ""}`}>
-                <span className="chip-label" onClick={handleLocationOpen}>{toTitleCase(currentFilters.suburb)}</span>
+                <span className="chip-label" onClick={() => handleLocationOpen()}>{toTitleCase(currentFilters.suburb)}</span>
                 <span className="chip-close" onClick={() => removeChip("suburb", { suburb:undefined, pincode:undefined, radius_kms:undefined })}>×</span>
               </span>
             )}
@@ -881,7 +924,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
             )}
             {(currentFilters.from_length || currentFilters.to_length) && (
               <span className={`active-chip${removingChip === "length" ? " chip-removing" : ""}`}>
-                <span className="chip-label" onClick={handleAllFiltersOpen}>
+                <span className="chip-label" onClick={() => handleAllFiltersOpen("length")}>
                   {currentFilters.from_length && currentFilters.to_length
                     ? `${currentFilters.from_length} – ${currentFilters.to_length} ft`
                     : currentFilters.from_length
@@ -893,7 +936,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
             )}
             {(currentFilters.acustom_fromyears || currentFilters.acustom_toyears) && (
               <span className={`active-chip${removingChip === "year" ? " chip-removing" : ""}`}>
-                <span className="chip-label" onClick={handleAllFiltersOpen}>
+                <span className="chip-label" onClick={() => handleAllFiltersOpen("year")}>
                   {currentFilters.acustom_fromyears && currentFilters.acustom_toyears
                     ? String(currentFilters.acustom_fromyears) === String(currentFilters.acustom_toyears)
                       ? `${currentFilters.acustom_fromyears}`
@@ -1185,7 +1228,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
               </div>
 
               {/* Year */}
-              <div className="filter-item">
+              <div className="filter-item" data-filter-field="year">
                 <h4>Year</h4>
                 <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
                   <div style={{ flex:1, minWidth:130 }}>
@@ -1212,7 +1255,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
               </div>
 
               {/* Length */}
-              <div className="filter-item">
+              <div className="filter-item" data-filter-field="length">
                 <h4>Length</h4>
                 <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
                   <div style={{ flex:1, minWidth:130 }}>
@@ -1417,7 +1460,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
 
                   {/* State list */}
                   <ul className="loc-state-list" style={{ display: tempSuburbSuggestion ? "none" : undefined }}>
-                    {visibleStates.map(s => {
+                    {locationStates.map(s => {
                       const abbr = abbrFor(s.name);
                       const isSelected = tempState?.toLowerCase() === s.name.toLowerCase();
                       return (
@@ -1444,10 +1487,12 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
                 <>
                   <div className="loc-region-heading">Region of {tempState}</div>
                   <ul className="loc-state-list">
-                    {filteredRegions.map(r => {
-                      const isSelected = tempRegion?.toLowerCase() === r.name.toLowerCase();
+                    {locationRegions.map(r => {
+                      // tempRegionRaw: the applied region, kept raw because regions load after the modal opens.
+                      const isSelected = tempRegion?.toLowerCase() === r.name.toLowerCase() || (!tempRegion && isApplied(r, tempRegionRaw ?? undefined));
                       return (
-                        <li key={r.name} className={`loc-state-item${isSelected ? " selected" : ""}`} onClick={() => setTempRegion(isSelected ? null : r.name)}>
+                        // Picking a region replaces an applied suburb (Search would otherwise re-apply the suburb).
+                        <li key={r.name} className={`loc-state-item${isSelected ? " selected" : ""}`} onClick={() => { setTempRegion(isSelected ? null : r.name); setTempRegionRaw(null); setTempSuburbSuggestion(null); }}>
                           <span className={`loc-checkbox${isSelected ? " checked" : ""}`}>
                             {isSelected && <i className="bi bi-check" style={{ color:"#fff", fontSize:14, lineHeight:1 }} />}
                           </span>
@@ -1710,7 +1755,7 @@ export default function StateFilterBar({ currentFilters, onFilterChange, onClear
             <div className="filter-body">
               <div className="filter-item condition-field">
                 <ul className="loc-state-list">
-                  {(["New","Used"] as const).map(cond => {
+                  {conditionOptions.map(cond => {
                     const isSelected = tempCondition?.toLowerCase() === cond.toLowerCase();
                     return (
                       <li key={cond} className="loc-state-item" onClick={() => setTempCondition(isSelected ? null : cond.toLowerCase())}>
