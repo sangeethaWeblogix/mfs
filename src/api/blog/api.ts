@@ -1,6 +1,13 @@
 const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
 const API_KEY = process.env.MFS_API_KEY; // ✅ Add this
 
+// The blog endpoint lives at the shared mpn/v1 root, not under the
+// motorhomes-specific sub-path NEXT_PUBLIC_MFS_API_BASE points at — it's one
+// shared table across the whole Marketplace Network, filtered per site via
+// `vehicle_type` (confirmed live: omitting it returns every sister site's
+// posts mixed together).
+const API_ROOT = API_BASE?.replace(/\/motorhomes\/?$/, "");
+
 export interface BlogPost {
   id: number;
   title: string;
@@ -24,7 +31,9 @@ interface RawBlogPost {
 export interface BlogApiResponse {
   success: boolean;
   data: RawBlogPost[];
-  meta?: {
+  // Live response field is "pagination", not "meta" — confirmed against a
+  // real post once the backend finally had blog content to check against.
+  pagination?: {
     total?: number;
     page?: number;
     per_page?: number;
@@ -68,12 +77,12 @@ const fetchWithTimeout = async (url: string) => {
 };
 
 export const fetchBlogs = async (page: number = 1): Promise<BlogPageResult> => {
-  if (!API_BASE) {
+  if (!API_ROOT) {
     console.error("❌ CFS_API_BASE env missing"); // ✅ Server log
     return { items: [], currentPage: page, totalPages: 1, total_pages: 1, error: true };
   }
 
-  const url = `${API_BASE}/blog?per_page=12&page=${page}`;
+  const url = `${API_ROOT}/blog?vehicle_type=motorhomes&per_page=12&page=${page}`;
 
   let lastErr: unknown;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -103,9 +112,9 @@ export const fetchBlogs = async (page: number = 1): Promise<BlogPageResult> => {
 
       return {
         items,
-        currentPage: data?.meta?.page ?? page,
-        totalPages: data?.meta?.total_pages ?? 1,
-        total_pages: data?.meta?.total_pages ?? 1,
+        currentPage: data?.pagination?.page ?? page,
+        totalPages: data?.pagination?.total_pages ?? 1,
+        total_pages: data?.pagination?.total_pages ?? 1,
       };
     } catch (err) {
       console.error(`❌ fetchBlogs error (attempt ${attempt}/${MAX_ATTEMPTS}):`, err);

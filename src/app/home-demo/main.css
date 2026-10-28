@@ -1632,11 +1632,16 @@ a.ignoretext {
   height: auto;
   margin-top: 0;
   margin-bottom: 15px;
-  font-size: 17px;
+  font-size: 16px;
   line-height: 25px;
   font-weight: 600;
   overflow: hidden;
   color: #000;
+}
+
+.date-author {
+  color: #888;
+    font-size: 13px;
 }
 
 .blog.style-8 .side-posts .item .info h3.title {

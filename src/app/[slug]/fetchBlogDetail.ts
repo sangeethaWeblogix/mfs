@@ -5,6 +5,12 @@ const API_KEY = process.env.MFS_API_KEY;
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_ATTEMPTS = 3;
 
+// The blog endpoint lives at the shared mpn/v1 root, not under the
+// motorhomes-specific sub-path API_BASE points at — it's one shared table
+// across the whole Marketplace Network, filtered per site via `vehicle_type`
+// (confirmed live: omitting it returns every sister site's posts mixed in).
+const API_ROOT = API_BASE?.replace(/\/motorhomes\/?$/, "");
+
 async function fetchWithTimeout(url: string) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -44,32 +50,43 @@ async function fetchJson(url: string): Promise<any | null> {
   return null;
 }
 
-// mpn/v1 has no dedicated blog-by-slug route yet (confirmed live:
-// /blog/{slug} 404s "no route", /blog-detail?slug= 500s) — only the /blog
-// listing endpoint exists, and it currently has 0 posts (blog content
-// hasn't been migrated to this backend yet). Filtering that listing by
-// `slug` is the closest available match, so posts should start showing up
-// here automatically once the backend adds them — but since there's no
-// live sample yet, this hasn't been verified against a real post. If blog
-// pages still don't render once content exists, check first whether
-// `slug` actually filters the /blog endpoint, and whether its item field
-// names (title/content/banner_image/etc.) match the old blog_detail shape
-// assumed below.
+// WP occasionally stores an image URL with a doubled protocol
+// (e.g. "https://https://...") from a bad copy-paste in the admin — that
+// malformed URL crashes next/image's hostname check and takes down the
+// whole page for every visitor (same issue fixed in src/api/blog/api.ts).
+const sanitizeImageUrl = (url?: string): string | undefined =>
+  url ? url.replace(/^(https?:\/\/)+(?=https?:\/\/)/i, "") : undefined;
+
+// /blog/{slug} used to 404 "no route" back when the backend had zero blog
+// posts to serve — now that real content exists it's live and returns the
+// full article (content/toc/faq/product_sections/category_featured_products),
+// unlike the /blog listing endpoint (filtered by `slug`) this used to fall
+// back to, which only ever had excerpt-level fields and no article body.
 //
 // cache() dedupes identical (slug, seed) calls within a single request, so
 // generateMetadata + layout + page no longer each hit the WP API separately.
 export const fetchBlogDetail = cache(async (slug: string, seed?: number): Promise<any | null> => {
-  if (!API_BASE) return null;
+  if (!API_ROOT) return null;
   const seedParam = seed ? `&seed=${seed}` : "";
 
-  const json = await fetchJson(`${API_BASE}/blog?per_page=1&slug=${encodeURIComponent(slug)}${seedParam}`);
-  const post = Array.isArray(json?.data) ? json.data[0] : null;
+  const json = await fetchJson(`${API_ROOT}/blog/${encodeURIComponent(slug)}?vehicle_type=motorhomes${seedParam}`);
+  const post = json?.data?.blog_detail ?? null;
   if (!post) return null;
+  if (post.featured_image) post.featured_image = sanitizeImageUrl(post.featured_image);
+  if (post.image) post.image = sanitizeImageUrl(post.image);
 
-  const listJson = await fetchJson(`${API_BASE}/blog?per_page=7${seedParam}`);
+  const listJson = await fetchJson(`${API_ROOT}/blog?vehicle_type=motorhomes&per_page=7${seedParam}`);
   const related = (Array.isArray(listJson?.data) ? listJson.data : [])
     .filter((p: any) => p.slug !== slug)
-    .slice(0, 6);
+    .slice(0, 6)
+    .map((p: any) => ({
+      id: p.id,
+      title: p.title,
+      excerpt: p.excerpt,
+      link: p.link,
+      slug: p.slug,
+      image: sanitizeImageUrl(p.featured_image),
+    }));
 
   return {
     data: {

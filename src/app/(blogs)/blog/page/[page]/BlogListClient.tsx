@@ -46,7 +46,10 @@ const loading = !data || !blogPosts || blogPosts.length === 0 && data.totalPages
     if (!str) return "";
     if (typeof window === "undefined") return str; // SSR safe
     const doc = new DOMParser().parseFromString(str, "text/html");
-    return doc.documentElement.textContent || "";
+    const text = doc.documentElement.textContent || "";
+    // WordPress's auto-generated excerpt truncation marker decodes to
+    // "[…]" — show a plain "..." instead.
+    return text.replace(/\[…\]\s*$/, "...");
   }
   // React to route segment changes (back/forward, manual URL input)
  

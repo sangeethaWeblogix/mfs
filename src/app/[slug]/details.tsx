@@ -190,7 +190,6 @@ type BlogDetail = {
   slug: string;
   title: string;
   date: string;
-  banner_image?: string;
   image?: string;
   toc?: string;
   content?: string;
@@ -230,6 +229,7 @@ export default function BlogDetailsPage({
   const [tocItems, setTocItems] = useState<Element[]>([]);
   const [showFullToc, setShowFullToc] = useState(false);
   const [browseTab, setBrowseTab] = useState(0);
+  const [shareCopied, setShareCopied] = useState(false);
 
   // ✅ Run DOMParser only on client
   const post = data?.data?.blog_detail;
@@ -402,6 +402,26 @@ export default function BlogDetailsPage({
     ? `${Math.max(1, Math.round(stripHtml(post.content).split(/\s+/).length / 200))} min read`
     : null;
 
+  const handleShare = async () => {
+    const shareData = { title: plainTitle, url: window.location.href };
+    if (navigator.share) {
+      try { await navigator.share(shareData); } catch { /* user cancelled — no-op */ }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch { /* clipboard unavailable — no-op */ }
+  };
+
+  const ShareButton = (
+    <button type="button" className="blog-share-btn" onClick={handleShare}>
+      <i className="bi bi-share" />
+      {shareCopied ? "Link copied!" : "Share"}
+    </button>
+  );
+
   if (!post) {
     redirect("/404");
   }
@@ -417,14 +437,15 @@ export default function BlogDetailsPage({
             <div className="blog-hero__meta">
               <span><i className="bi bi-calendar3" />{formatPostDate(post.date)}</span>
               {readingTime && <span><i className="bi bi-clock" />{readingTime}</span>}
+              {ShareButton}
             </div>
           </div>
         </div>
         {/* Right: banner image */}
         <div className="blog-hero__right">
-          {post.banner_image ? (
+          {post.image ? (
             <Image
-              src={post.banner_image}
+              src={post.image}
               alt={plainTitle}
               width={0}
               height={0}
@@ -551,6 +572,10 @@ export default function BlogDetailsPage({
                   __html: post.content || "<p>No content available</p>",
                 }}
               />
+              <div className="blog-share-row">
+                <span className="blog-share-row__label">Share this article</span>
+                {ShareButton}
+              </div>
             </div>
 
             {/* Sidebar: TOC + CTA cards */}

@@ -297,9 +297,7 @@ export default function HomePage({
         </section> */}
 
 
-      {/* Latest Blog Section — Hidden for now
       <BlogSection posts={blogPosts} />
-      */}
     </div>
   );
 }
