@@ -57,6 +57,17 @@ async function fetchJson(url: string): Promise<any | null> {
 const sanitizeImageUrl = (url?: string): string | undefined =>
   url ? url.replace(/^(https?:\/\/)+(?=https?:\/\/)/i, "") : undefined;
 
+// The "Easy Table of Contents" plugin bakes its heading anchors into the
+// article HTML as absolute links back to the WordPress admin host
+// (admin.marketplacenetwork.com.au/{slug}/#Heading) — clicking one on this
+// site navigated visitors away to that (non-public) backend host instead of
+// just jumping to the section on this page. Our own sidebar TOC also reads
+// these same hrefs straight out of the rendered content, so fixing them
+// here once covers both the embedded in-article TOC and the sidebar one.
+function stripAdminHostFromAnchors(html: string): string {
+  return html.replace(/https?:\/\/admin\.marketplacenetwork\.com\.au\/[^"'#]*#/g, "#");
+}
+
 // /blog/{slug} used to 404 "no route" back when the backend had zero blog
 // posts to serve — now that real content exists it's live and returns the
 // full article (content/toc/faq/product_sections/category_featured_products),
@@ -74,6 +85,8 @@ export const fetchBlogDetail = cache(async (slug: string, seed?: number): Promis
   if (!post) return null;
   if (post.featured_image) post.featured_image = sanitizeImageUrl(post.featured_image);
   if (post.image) post.image = sanitizeImageUrl(post.image);
+  if (post.content) post.content = stripAdminHostFromAnchors(post.content);
+  delete post.link;
 
   const listJson = await fetchJson(`${API_ROOT}/blog?vehicle_type=motorhomes&per_page=7${seedParam}`);
   const related = (Array.isArray(listJson?.data) ? listJson.data : [])
@@ -83,7 +96,6 @@ export const fetchBlogDetail = cache(async (slug: string, seed?: number): Promis
       id: p.id,
       title: p.title,
       excerpt: p.excerpt,
-      link: p.link,
       slug: p.slug,
       image: sanitizeImageUrl(p.featured_image),
     }));

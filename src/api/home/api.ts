@@ -18,7 +18,6 @@ export type HomeBlogPost = {
   id?: number;
   title?: string;
   excerpt?: string;
-  link?: string;
   image?: string;
   slug?: string;
   date?: string;
@@ -55,6 +54,9 @@ type BlogRaw = {
   id?: number;
   title?: string;
   excerpt?: string;
+  // Not carried into HomeBlogPost — it's the WordPress admin host's own
+  // permalink (admin.marketplacenetwork.com.au), not where the post is
+  // actually readable, and homeblog is unused by the home page anyway.
   link?: string;
   image?: string;
   slug?: string;
@@ -111,7 +113,6 @@ function normalizeBlog(src: BlogRaw = {}): HomeBlogPost {
     id: src.id,
     title: src.title,
     excerpt: src.excerpt,
-    link: src.link,
     image: src.image,
     slug: src.slug,
     date: src.date,

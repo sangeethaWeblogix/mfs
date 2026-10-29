@@ -5,7 +5,6 @@ import { Metadata } from "next";
  
 import { fetchStateBasedCaravans } from "@/api/homeApi/state/api";
 import { fetchRequirements } from "@/api/postRquirements/api";
-import { fetchHomePage } from "@/api/home/api";
 import { fetchTypeCounts } from "@/api/homeApi/typeCounts/api";
 import { fetchHomeFeatured } from "@/api/homeApi/featured/api";
 import { fetchBlogs } from "@/api/blog/api";
@@ -103,7 +102,6 @@ export default async function Page() {
   const [
     stateBands,
     requirements,
-    homeblog,
     typeCounts,
     featuredAll,
     featuredNew,
@@ -112,7 +110,6 @@ export default async function Page() {
   ] = await Promise.all([
     fetchStateBasedCaravans(),
     fetchRequirements(),
-    fetchHomePage(),
     fetchTypeCounts(),
     fetchHomeFeatured({ type: "all", seed }),
     fetchHomeFeatured({ type: "new", seed }),
@@ -131,7 +128,6 @@ export default async function Page() {
       <Home
         stateBands={stateBands}
         requirements={requirements}
-        homeblog={homeblog?.latest_posts ?? []}
         typeCounts={typeCounts}
         featured={featured}
         blogPosts={blog.items}

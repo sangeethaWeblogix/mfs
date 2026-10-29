@@ -2,7 +2,6 @@ import Home from "./home";
 import "../globals.css";
  import { fetchStateBasedCaravans } from "@/api/homeApi/state/api";
 import { fetchRequirements } from "@/api/postRquirements/api";
-import { fetchHomePage } from "@/api/home/api";
 import { fetchHomeFeatured } from "@/api/homeApi/featured/api";
 import { fetchBlogs } from "@/api/blog/api";
 
@@ -17,7 +16,6 @@ export default async function HomeDemoPage() {
 
     stateBands,
     requirements,
-    homeblog,
     featuredAll,
     featuredNew,
     featuredUsed,
@@ -26,7 +24,6 @@ export default async function HomeDemoPage() {
 
     fetchStateBasedCaravans(),
     fetchRequirements(),
-    fetchHomePage(),
     fetchHomeFeatured({ type: "all", seed }),
     fetchHomeFeatured({ type: "new", seed }),
     fetchHomeFeatured({ type: "used", seed }),
@@ -40,7 +37,6 @@ export default async function HomeDemoPage() {
 
       stateBands={stateBands}
       requirements={requirements}
-      homeblog={homeblog?.latest_posts ?? []}
       featured={featured}
       blogPosts={blog.items}
     />

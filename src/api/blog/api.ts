@@ -12,7 +12,6 @@ export interface BlogPost {
   id: number;
   title: string;
   excerpt: string;
-  link: string;
   image: string;
   slug: string;
   date: string;
@@ -22,7 +21,11 @@ interface RawBlogPost {
   id: number;
   title: string;
   excerpt: string;
-  link: string;
+  // The backend's own `link` field is its WordPress admin host's permalink
+  // (admin.marketplacenetwork.com.au), not where the post is actually
+  // readable — real navigation always builds /{slug}/ instead, so this is
+  // read here only to be dropped, not exposed in the page's client payload.
+  link?: string;
   slug: string;
   date: string;
   featured_image?: string;
@@ -104,7 +107,6 @@ export const fetchBlogs = async (page: number = 1): Promise<BlogPageResult> => {
         id: p.id,
         title: p.title,
         excerpt: p.excerpt,
-        link: p.link,
         slug: p.slug,
         date: p.date,
         image: p.featured_image ? sanitizeImageUrl(p.featured_image) : "",

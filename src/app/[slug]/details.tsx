@@ -207,7 +207,6 @@ type RelatedBlog = {
   id: number;
   title: string;
   excerpt: string;
-  link: string;
   image?: string;
   imageAlt?: string;
   slug?: string;

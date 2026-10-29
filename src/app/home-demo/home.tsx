@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 
-import { type HomeBlogPost } from "@/api/home/api";
 import { type BlogPost } from "@/api/blog/api";
 import { type TypeCounts } from "@/api/homeApi/typeCounts/api";
 import HomeFeatured from "./HomeFeatured";
@@ -51,7 +50,6 @@ type FeaturedListing = {
 interface Props {
   stateBands: Item[];
   requirements: any;
-  homeblog: HomeBlogPost[];
   typeCounts?: TypeCounts;
   featured: { all: FeaturedListing[]; new: FeaturedListing[]; used: FeaturedListing[] };
   blogPosts: BlogPost[];
@@ -61,7 +59,6 @@ export default function HomePage({
 
   stateBands,
   requirements,
-    homeblog,
   typeCounts,
   featured,
   blogPosts,
