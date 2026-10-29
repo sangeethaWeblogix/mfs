@@ -95,7 +95,7 @@ function parsePoolJson(json: any, isIndexed: boolean): InitialPool | null {
     usedItems = [];
   }
 
-  return { seo, featured, new: newItems, used: usedItems, maxPages, isIndexed };
+  return { seo, featured, new: newItems, used: usedItems, maxPages, isIndexed, totalProducts };
 }
 
 /**

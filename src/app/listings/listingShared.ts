@@ -2,6 +2,7 @@ export type Listing = {
   id: number;
   name: string;
   slug?: string;
+  sku?: string;
   condition: string;
   location?: string;
   state?: string;

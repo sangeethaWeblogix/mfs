@@ -7,6 +7,7 @@ import { metaFromSlug } from "@/utils/seo/meta";
 import { fetchBrowseSectionData } from "../fetchBrowseSectionData";
 import { fetchInitialPool, fetchConditionSeo } from "../fetchInitialPool";
 import { fetchInitialParamsCount } from "../fetchInitialParamsCount";
+import { buildListingsJsonLd, fetchVehicleNameLists } from "@/utils/seo/listingsJsonLd";
 import "../../globals.css";
 
 // Rendered fresh on every request (no ISR cache) — the shuffled product order
@@ -86,23 +87,40 @@ export default async function LocationStateDemoPage({
     : 0;
   const apiSeed = shuffleSeed > 0 ? shuffleSeed : Math.floor(Math.random() * SEED_MAX) + 1;
 
-  const [browseData, initialPool, initialParamsCount, newSeo, usedSeo] = await Promise.all([
+  const [browseData, initialPool, initialParamsCount, newSeo, usedSeo, vehicleNames] = await Promise.all([
     fetchBrowseSectionData(initialFilters),
     fetchInitialPool(initialFilters, isIndexed, apiSeed),
     fetchInitialParamsCount(),
     isIndexed ? fetchConditionSeo(initialFilters, "New", apiSeed) : Promise.resolve(null),
     isIndexed ? fetchConditionSeo(initialFilters, "Used", apiSeed) : Promise.resolve(null),
+    fetchVehicleNameLists(),
   ]);
 
+  const listingsJsonLd = buildListingsJsonLd(
+    initialFilters,
+    initialPool?.seo ?? null,
+    initialPool?.totalProducts ?? 0,
+    [...(initialPool?.featured ?? []), ...(initialPool?.new ?? []), ...(initialPool?.used ?? [])],
+    canonicalPath,
+    1,
+    vehicleNames
+  );
+
   return (
-    <StateHome
-      initialFilters={initialFilters}
-      browseData={browseData}
-      initialPool={initialPool}
-      serverIsIndexed={isIndexed}
-      initialParamsCount={initialParamsCount}
-      initialNewSeo={newSeo}
-      initialUsedSeo={usedSeo}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(listingsJsonLd) }}
+      />
+      <StateHome
+        initialFilters={initialFilters}
+        browseData={browseData}
+        initialPool={initialPool}
+        serverIsIndexed={isIndexed}
+        initialParamsCount={initialParamsCount}
+        initialNewSeo={newSeo}
+        initialUsedSeo={usedSeo}
+      />
+    </>
   );
 }

@@ -51,7 +51,10 @@ export default async function BlogPage() {
             itemListElement: data.items.map((post, i) => ({
               "@type": "ListItem",
               position: i + 1,
-              url: post.link,
+              // post.link is the WordPress backend's own admin.marketplacenetwork.com.au
+              // permalink, not where the post is actually readable — this site serves
+              // it at /{slug}/, same as every other blog link in the codebase.
+              url: `https://www.motorhomesforsale.com.au/${post.slug}/`,
               name: post.title,
             })),
           },

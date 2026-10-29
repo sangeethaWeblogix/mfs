@@ -100,6 +100,9 @@ export type InitialPool = {
   used: Listing[];
   maxPages: number;
   isIndexed: boolean;
+  /** Real total matching the current filters — used for the listings page's
+   * JSON-LD numberOfItems, not just maxPages' pagination math. */
+  totalProducts: number;
 };
 
 interface Props {

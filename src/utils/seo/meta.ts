@@ -158,7 +158,11 @@ export async function metaFromSlug(
   return {
     title: { absolute: title },
     description,
-    robots: { index: robotsResult.index },
+    // Next only renders the directives explicitly set here — passing just
+    // {index} renders content="index" with no follow/nofollow at all.
+    // Index and follow always move together on this site (same as
+    // middleware's X-Robots-Tag header logic), so mirror that here too.
+    robots: { index: robotsResult.index, follow: robotsResult.index },
     alternates: { canonical, languages: {}, media: {} },
     openGraph: {
       title,
