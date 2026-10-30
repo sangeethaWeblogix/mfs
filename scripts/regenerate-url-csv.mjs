@@ -38,6 +38,56 @@ const API_TYPES = [
   "length", "gvm", "price",
 ];
 
+async function fetchParamsCount(query) {
+  try {
+    const res = await fetch(`${API_BASE}/params-count?${query}`, {
+      headers: {
+        Accept: "application/json",
+        ...(API_KEY && { "X-Secret-Key": API_KEY }),
+      },
+    });
+    if (!res.ok) return null;
+    const raw = await res.text();
+    const idx = raw.indexOf('{"');
+    return JSON.parse(idx > 0 ? raw.slice(idx) : raw);
+  } catch {
+    return null;
+  }
+}
+
+// /sitemap/models?min_count=1 keeps reporting make/model combos whose last
+// product has already sold (confirmed live) — the same combo 410s on the
+// real /listings/{make}/{model}/ page because middleware's own
+// isValidMakeModel() checks a different, accurate endpoint
+// (/params-count?group_by=model&motorhome_make=X). bust_cache doesn't help,
+// the sitemap endpoint's min_count logic is just wrong/stale server-side.
+// Mirrors src/lib/sitemapApi.ts's filterLiveModels() so url.csv and the
+// live sitemap route agree on which models are actually still live.
+async function filterLiveModels(paths) {
+  const byMake = new Map();
+  for (const path of paths) {
+    const [make, model] = path.split("/").filter(Boolean);
+    if (!make || !model) continue;
+    if (!byMake.has(make)) byMake.set(make, []);
+    byMake.get(make).push(model);
+  }
+
+  const validModelsByMake = new Map();
+  await Promise.all(
+    Array.from(byMake.keys()).map(async (make) => {
+      const data = await fetchParamsCount(`group_by=model&motorhome_make=${encodeURIComponent(make)}`);
+      const models = Array.isArray(data?.data) ? data.data : null;
+      if (models) validModelsByMake.set(make, new Set(models.map((m) => m.slug)));
+    })
+  );
+
+  return paths.filter((path) => {
+    const [make, model] = path.split("/").filter(Boolean);
+    const validModels = validModelsByMake.get(make);
+    return !validModels || validModels.has(model);
+  });
+}
+
 async function fetchType(type) {
   try {
     const res = await fetch(`${API_BASE}/sitemap/${type}?min_count=1&bust_cache=0`, {
@@ -53,7 +103,8 @@ async function fetchType(type) {
     const raw = await res.text();
     const idx = raw.indexOf('{"');
     const json = JSON.parse(idx > 0 ? raw.slice(idx) : raw);
-    return Array.isArray(json?.paths) ? json.paths : [];
+    const paths = Array.isArray(json?.paths) ? json.paths : [];
+    return type === "models" ? await filterLiveModels(paths) : paths;
   } catch (err) {
     console.warn(`[${type}] fetch failed — skipping:`, err.message);
     return [];

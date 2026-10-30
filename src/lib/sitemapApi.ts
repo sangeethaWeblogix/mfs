@@ -16,6 +16,62 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.motorhomesfors
  * product slugs (rendered under /product/), everything else returns a
  * /listings/ filter path.
  */
+async function fetchParamsCount(query: string): Promise<any | null> {
+  try {
+    const res = await fetch(`${API_BASE}/params-count?${query}`, {
+      headers: {
+        Accept: "application/json",
+        ...(API_KEY && { "X-Secret-Key": API_KEY }),
+      },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const raw = await res.text();
+    const idx = raw.indexOf('{"');
+    return JSON.parse(idx > 0 ? raw.slice(idx) : raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * /sitemap/models?min_count=1 has been confirmed (live) to keep reporting
+ * make/model combos whose last product has already sold — the same combo
+ * 410s on the actual /listings/{make}/{model}/ page because middleware's
+ * isValidMakeModel() checks a different, accurate endpoint
+ * (/params-count?group_by=model&motorhome_make=X). bust_cache=1 doesn't
+ * help — it's not a caching issue, the sitemap endpoint's own min_count
+ * logic is just wrong/stale server-side. Cross-checking against the same
+ * params-count endpoint middleware trusts keeps dead models out of both
+ * the sitemap and url.csv regardless of that backend bug.
+ */
+async function filterLiveModels(paths: string[]): Promise<string[]> {
+  const byMake = new Map<string, string[]>();
+  for (const path of paths) {
+    const [make, model] = path.split("/").filter(Boolean);
+    if (!make || !model) continue;
+    if (!byMake.has(make)) byMake.set(make, []);
+    byMake.get(make)!.push(model);
+  }
+
+  const validModelsByMake = new Map<string, Set<string>>();
+  await Promise.all(
+    Array.from(byMake.keys()).map(async (make) => {
+      const data = await fetchParamsCount(`group_by=model&motorhome_make=${encodeURIComponent(make)}`);
+      const models = Array.isArray(data?.data) ? data.data : null;
+      // API error for this make — don't drop its models, we have no signal either way.
+      validModelsByMake.set(make, models ? new Set(models.map((m: any) => m.slug)) : new Set());
+      if (!models) validModelsByMake.delete(make);
+    })
+  );
+
+  return paths.filter((path) => {
+    const [make, model] = path.split("/").filter(Boolean);
+    const validModels = validModelsByMake.get(make);
+    return !validModels || validModels.has(model);
+  });
+}
+
 export async function fetchSitemapPaths(type: string): Promise<string[]> {
   if (!API_BASE) return [];
   try {
@@ -31,7 +87,8 @@ export async function fetchSitemapPaths(type: string): Promise<string[]> {
     const raw = await res.text();
     const idx = raw.indexOf('{"');
     const json = JSON.parse(idx > 0 ? raw.slice(idx) : raw);
-    return Array.isArray(json?.paths) ? json.paths : [];
+    const paths = Array.isArray(json?.paths) ? json.paths : [];
+    return type === "models" ? await filterLiveModels(paths) : paths;
   } catch {
     return [];
   }
