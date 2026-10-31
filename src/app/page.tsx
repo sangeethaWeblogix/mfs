@@ -8,6 +8,8 @@ import { fetchRequirements } from "@/api/postRquirements/api";
 import { fetchTypeCounts } from "@/api/homeApi/typeCounts/api";
 import { fetchHomeFeatured } from "@/api/homeApi/featured/api";
 import { fetchBlogs } from "@/api/blog/api";
+import { fetchLinkableHrefs } from "@/app/listings/fetchBrowseSectionData";
+import HomeLocationSection from "./home-demo/HomeLocationSection";
 
 const SEED_MAX = 15;
 
@@ -108,7 +110,12 @@ export default async function Page() {
     featuredUsed,
     blog,
   ] = await Promise.all([
-    fetchStateBasedCaravans(),
+    // State cards whose page would 410 or show 0 results are dropped (live
+    // counts, so they come back once stock arrives).
+    fetchStateBasedCaravans().then(async (bands) => {
+      const linkable = new Set(await fetchLinkableHrefs(bands.map((b) => b.permalink)));
+      return bands.filter((b) => linkable.has(b.permalink));
+    }),
     fetchRequirements(),
     fetchTypeCounts(),
     fetchHomeFeatured({ type: "all", seed }),
@@ -131,6 +138,7 @@ export default async function Page() {
         typeCounts={typeCounts}
         featured={featured}
         blogPosts={blog.items}
+        locationSection={<HomeLocationSection />}
       />
     </>
   );

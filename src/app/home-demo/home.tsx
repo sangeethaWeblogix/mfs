@@ -8,7 +8,6 @@ import { type TypeCounts } from "@/api/homeApi/typeCounts/api";
 import HomeFeatured from "./HomeFeatured";
 import HomeStateSection from "./HomeStateSection";
 import HomeTypeSection from "./HomeTypeSection";
-import HomeLocationSection from "./HomeLocationSection";
 import HomeBuyerGuide from "./HomeBuyerGuide";
 import HomeListingSlider from "./HomeListingSlider";
 import { useBanners } from "@/components/BannerHandler";
@@ -53,6 +52,8 @@ interface Props {
   typeCounts?: TypeCounts;
   featured: { all: FeaturedListing[]; new: FeaturedListing[]; used: FeaturedListing[] };
   blogPosts: BlogPost[];
+  /** Server-rendered HomeLocationSection (its links are count-checked on the server). */
+  locationSection?: React.ReactNode;
 }
 /* --------------------------------- Page ---------------------------------- */
 export default function HomePage({
@@ -62,6 +63,7 @@ export default function HomePage({
   typeCounts,
   featured,
   blogPosts,
+  locationSection,
 
  }: Props) {
 
@@ -280,7 +282,7 @@ export default function HomePage({
       */}
 
       {/* ── Find by Location ── */}
-      <HomeLocationSection />
+      {locationSection}
 
       {/* ── Buyer Guide + Why Australians ── */}
       <HomeBuyerGuide />

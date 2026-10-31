@@ -3,9 +3,11 @@ import {
   GVM_BANDS,
   LENGTH_BANDS,
   SLEEP_BANDS,
+  defaultBrowseHrefs,
   type CountItem,
   type BrowseSectionData,
 } from "./browseSectionShared";
+import { linkableListingHrefs } from "./linkableListings";
 
 const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
 const API_KEY = process.env.MFS_API_KEY;
@@ -55,6 +57,33 @@ async function fetchBandCountServer(scope: Record<string, string>, query: string
   } catch {
     return 0;
   }
+}
+
+/** params-count JSON for a link guard; null = unknown. Same endpoint/key as
+ * the middleware's state/region/make checks; a shorter cache than the counts
+ * above so a region that sells out stops being linked soon after it 410s. */
+async function fetchParamsCountServer(query: string): Promise<any | null> {
+  try {
+    const res = await fetch(`${API_BASE}/params-count?${query}`, {
+      headers: {
+        Accept: "application/json",
+        ...(API_KEY && { "X-Secret-Key": API_KEY }),
+      },
+      next: { revalidate: 600 },
+    });
+    if (!res.ok) return null;
+    const raw = await res.text();
+    const idx = raw.indexOf('{"');
+    return JSON.parse(idx > 0 ? raw.substring(idx) : raw);
+  } catch {
+    return null;
+  }
+}
+
+/** Server-side link guard for home/footer/browse links — keeps only hrefs
+ * that open a live, non-empty listings page (see linkableListings.ts). */
+export function fetchLinkableHrefs(hrefs: string[]): Promise<string[]> {
+  return linkableListingHrefs(hrefs, fetchParamsCountServer);
 }
 
 async function fetchAllBandCountsServer(scope: Record<string, string>) {
@@ -142,8 +171,8 @@ export async function fetchBrowseSectionData(
     };
   }
 
-  // Default mode (no state/category, or state-only) — the pills rendered
-  // here are static (STATES/TYPES_NO_STATE/FILTERS_NO_STATE) or come from
-  // getRegionsByState, none of which need count data at all.
-  return {};
+  // Default mode (no state/category, or state-only) — the pills are static
+  // (STATES/FILTERS_NO_STATE) or come from getRegionsByState, so check each
+  // one live: a region with no stock 410s, an empty band renders 0 results.
+  return { linkableHrefs: await fetchLinkableHrefs(defaultBrowseHrefs(state)) };
 }

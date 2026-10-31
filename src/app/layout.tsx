@@ -22,6 +22,8 @@ import { headers } from "next/headers";
 import { metaFromSlug } from "@/utils/seo/meta";
 import { fetchProductMeta } from "@/utils/fetchProductMeta";
 import fetchListingsForHead, { buildListingsJsonLd, buildBreadcrumbs } from "@/utils/fetchListingsHead";
+import { fetchLinkableHrefs } from "@/app/listings/fetchBrowseSectionData";
+import { FOOTER_LISTING_HREFS } from "./footer/footerLinks";
 
   const montserrat = Montserrat({
     subsets: ["latin"],
@@ -55,6 +57,9 @@ import fetchListingsForHead, { buildListingsJsonLd, buildBreadcrumbs } from "@/u
     // Kicked off here, awaited just before render so it overlaps with the
     // productMeta/listingsForHead fetches below instead of blocking on them.
     const bannersPromise = fetchBanners();
+    // Footer listings links that would 410 or show 0 results are dropped (live
+    // counts, cached — they come back once stock arrives).
+    const footerLinksPromise = fetchLinkableHrefs(FOOTER_LISTING_HREFS);
     const isListingSlug =
       pathname.startsWith("/listings/") &&
       pathname !== "/listings/" &&
@@ -146,6 +151,7 @@ import fetchListingsForHead, { buildListingsJsonLd, buildBreadcrumbs } from "@/u
     }
 
     const initialBanners = await bannersPromise;
+    const footerLinkableHrefs = await footerLinksPromise;
 
     return (
       <html lang="en">
@@ -324,7 +330,7 @@ import fetchListingsForHead, { buildListingsJsonLd, buildBreadcrumbs } from "@/u
           {children}
           </BannerProvider>
                     </main>
-          <Footer />
+          <Footer linkableHrefs={footerLinkableHrefs} />
         </body>
       </html>
       

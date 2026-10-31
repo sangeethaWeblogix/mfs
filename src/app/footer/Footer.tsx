@@ -3,48 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import "./footer.css?=20";
-
-// This site has no "-category" filter support — buildSlugFromFilters()
-// never re-emits a category segment, so any "*-category" URL always 410s
-// by design (not a data fluke). Browse by condition instead.
-const BROWSE_MOTORHOMES = [
-  { text: "All Motorhomes for Sale", href: "/listings/" },
-  { text: "New Motorhomes", href: "/listings/new-condition/" },
-  { text: "Used Motorhomes", href: "/listings/used-condition/" },
-];
-
-const BROWSE_STATES = [
-  { text: "Victoria", href: "/listings/victoria-state/" },
-  { text: "New South Wales", href: "/listings/new-south-wales-state/" },
-  { text: "Queensland", href: "/listings/queensland-state/" },
-  { text: "Western Australia", href: "/listings/western-australia-state/" },
-  { text: "South Australia", href: "/listings/south-australia-state/" },
-  { text: "Tasmania", href: "/listings/tasmania-state/" },
-];
-
-const POPULAR_LOCATIONS = [
-  { text: "Adelaide",    href: "/listings/south-australia-state/adelaide-region/" },
-  { text: "Brisbane",    href: "/listings/queensland-state/brisbane-region/" },
-  { text: "Gold Coast",  href: "/listings/queensland-state/gold-coast-region/" },
-  { text: "Melbourne",   href: "/listings/victoria-state/melbourne-region/" },
-  { text: "Perth",       href: "/listings/western-australia-state/perth-region/" },
-  { text: "Sydney",      href: "/listings/new-south-wales-state/sydney-region/" },
-  { text: "Cairns",      href: "/listings/queensland-state/cairns-region/" },
-];
-
-// Shown when "View All Locations" is expanded — same extra city list as
-// home-demo/HomeLocationSection.tsx's MINOR_CITIES.
-const MORE_LOCATIONS = [
-  { text: "Canberra",       href: "/listings/australian-capital-territory-state/australian-capital-territory-region/" },
-  { text: "Darwin",         href: "/listings/northern-territory-state/darwin-region/" },
-  { text: "Geelong",        href: "/listings/victoria-state/geelong-region/" },
-  { text: "Hobart",         href: "/listings/tasmania-state/hobart-region/" },
-  { text: "Newcastle",      href: "/listings/new-south-wales-state/newcastle-region/" },
-  { text: "Sunshine Coast", href: "/listings/queensland-state/sunshine-coast-region/" },
-  { text: "Townsville",     href: "/listings/queensland-state/townsville-region/" },
-  { text: "Wollongong",     href: "/listings/new-south-wales-state/illawarra-region/" },
-  { text: "Ballarat",       href: "/listings/victoria-state/ballarat-region/" },
-];
+import { BROWSE_MOTORHOMES, BROWSE_STATES, POPULAR_LOCATIONS, MORE_LOCATIONS } from "./footerLinks";
 
 const SELLER_LOGIN_URL = "https://seller.marketplacenetwork.com.au/seller-login/";
 const DEALER_SIGNUP_URL = "https://seller.marketplacenetwork.com.au/motorhome-dealer-subscription/";
@@ -142,8 +101,19 @@ const SELL_BY_LOCATION = [
   },
 ];
 
-const Footer = () => {
+interface Props {
+  /** Server-checked listings hrefs (fetched in layout.tsx) —
+   * links missing from it would 410 or show 0 results. Omitted = show all. */
+  linkableHrefs?: string[];
+}
+
+const Footer = ({ linkableHrefs }: Props) => {
   const currentYear = new Date().getFullYear();
+  const linkable = (l: { href: string }) => !linkableHrefs || linkableHrefs.includes(l.href);
+  const browseMotorhomes = BROWSE_MOTORHOMES.filter(linkable);
+  const browseStates = BROWSE_STATES.filter(linkable);
+  const popularLocations = POPULAR_LOCATIONS.filter(linkable);
+  const moreLocations = MORE_LOCATIONS.filter(linkable);
   const [sellByLocationOpen, setSellByLocationOpen] = useState(false);
   const [showAllLocations, setShowAllLocations] = useState(false);
 
@@ -156,7 +126,7 @@ const Footer = () => {
             <div className="ftr-col">
               <h4 className="ftr-col__title">Browse Motorhomes</h4>
               <ul className="ftr-col__list">
-                {BROWSE_MOTORHOMES.map((l) => (
+                {browseMotorhomes.map((l) => (
                   <li key={l.href}><a href={l.href}>{l.text}</a></li>
                 ))}
               </ul>
@@ -165,7 +135,7 @@ const Footer = () => {
             <div className="ftr-col">
               <h4 className="ftr-col__title">Browse by State</h4>
               <ul className="ftr-col__list">
-                {BROWSE_STATES.map((l) => (
+                {browseStates.map((l) => (
                   <li key={l.href}><a href={l.href}>{l.text}</a></li>
                 ))}
               </ul>
@@ -174,13 +144,13 @@ const Footer = () => {
             <div className="ftr-col">
               <h4 className="ftr-col__title">Popular Locations</h4>
               <ul className="ftr-col__list">
-                {POPULAR_LOCATIONS.map((l) => (
+                {popularLocations.map((l) => (
                   <li key={l.href}><a href={l.href}>{l.text}</a></li>
                 ))}
-                {showAllLocations && MORE_LOCATIONS.map((l) => (
+                {showAllLocations && moreLocations.map((l) => (
                   <li key={l.href}><a href={l.href}>{l.text}</a></li>
                 ))}
-                {!showAllLocations && (
+                {!showAllLocations && moreLocations.length > 0 && (
                   <li>
                     <button
                       type="button"

@@ -6,9 +6,7 @@ import {
   toStateSlug,
   stateLabel,
   cleanRegionName,
-  STATES,
   // TYPES_NO_STATE, // type section disabled — should not appear on the listing page
-  FILTERS_NO_STATE,
   PRICE_BANDS,
   GVM_BANDS,
   LENGTH_BANDS,
@@ -16,13 +14,14 @@ import {
   categoryLabel,
   buildStatesForCategory,
   buildPopularRegionsForCategory,
-  buildAllRegionsForState,
   // buildTypesForState, // type section disabled — should not appear on the listing page
-  buildFiltersForState,
+  buildDefaultBrowseLinks,
+  defaultBrowseHrefs,
   type CountItem,
   type BrowseSectionData,
 } from "./browseSectionShared";
 import { parseObfuscatedResponse, obfuscateUrl } from "@/lib/obfuscation";
+import { linkableListingHrefs, fetchParamsCountClient } from "./linkableListings";
 
 async function fetchGroupCounts(groupBy: string, scope: Record<string, string>): Promise<CountItem[]> {
   try {
@@ -92,6 +91,7 @@ export default function StateBrowseSection({ state, region, category, initialDat
   const [gvmCounts,      setGvmCounts]      = useState<number[] | null>(initialData?.gvmCounts ?? null);
   const [lengthCounts,   setLengthCounts]   = useState<number[] | null>(initialData?.lengthCounts ?? null);
   const [sleepCounts,    setSleepCounts]    = useState<number[] | null>(initialData?.sleepCounts ?? null);
+  const [linkableHrefs,  setLinkableHrefs]  = useState<string[] | null>(initialData?.linkableHrefs ?? null);
 
   // initialData only covers the filters the server rendered this page with —
   // filter changes happen via client-side pushState (see home.tsx), not a
@@ -162,6 +162,19 @@ export default function StateBrowseSection({ state, region, category, initialDat
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryStateRegionMode, category, state, region]);
+
+  // Default mode (no category/region) — which region/state/band links lead
+  // to a live, non-empty page.
+  const defaultMode = !hasCategory && !hasRegion;
+  useEffect(() => {
+    if (!defaultMode || (initialData?.linkableHrefs && isInitialFilters)) return;
+    let cancelled = false;
+    setLinkableHrefs(null);
+    linkableListingHrefs(defaultBrowseHrefs(state), fetchParamsCountClient)
+      .then((hrefs) => { if (!cancelled) setLinkableHrefs(hrefs); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultMode, state]);
 
   // Shared shape for the "By Budget/GVM/Length/Sleep"-style vertical-list
   // filter columns used by every dynamic mode below.
@@ -439,9 +452,15 @@ export default function StateBrowseSection({ state, region, category, initialDat
     );
   }
 
-  const regions = hasState ? buildAllRegionsForState(state!) : STATES;
+  // Links that would 410 or show 0 results are dropped once linkableHrefs
+  // has loaded (null = still loading → show the full static list).
+  const linkable = (href: string) => linkableHrefs === null || linkableHrefs.includes(href);
+  const defaultLinks = buildDefaultBrowseLinks(state);
+  const regions = defaultLinks.regions.filter((r) => linkable(r.href));
   // const types   = hasState ? buildTypesForState(state!) : TYPES_NO_STATE;
-  const filters = hasState ? buildFiltersForState(state!) : FILTERS_NO_STATE;
+  const filters = defaultLinks.filters
+    .map((f) => ({ ...f, links: f.links.filter((l) => linkable(l.href)) }))
+    .filter((f) => f.links.length > 0);
 
   const leftTitle  = hasState ? `Browse Motorhomes by Region in ${stateLabel(state!)}` : "Browse Motorhomes by State";
   // const rightTitle = hasState ? `Browse Motorhomes by Type in ${stateLabel(state!)}`   : "Browse Motorhomes by Type";

@@ -209,6 +209,21 @@ export function buildFiltersForState(state: string) {
   }));
 }
 
+// Default mode (no category/region): regions of the state, or every state,
+// plus the band columns — shared so the server can count the same links the
+// section renders.
+export function buildDefaultBrowseLinks(state?: string) {
+  return {
+    regions: state ? buildAllRegionsForState(state) : STATES,
+    filters: state ? buildFiltersForState(state) : FILTERS_NO_STATE,
+  };
+}
+
+export function defaultBrowseHrefs(state?: string): string[] {
+  const { regions, filters } = buildDefaultBrowseLinks(state);
+  return [...regions.map((r) => r.href), ...filters.flatMap((f) => f.links.map((l) => l.href))];
+}
+
 export type CountItem = { name: string; slug: string; count: number };
 
 export interface BrowseSectionData {
@@ -220,4 +235,6 @@ export interface BrowseSectionData {
   gvmCounts?: number[] | null;
   lengthCounts?: number[] | null;
   sleepCounts?: number[] | null;
+  /** Default mode: the region/state/band hrefs that lead to a live, non-empty page. */
+  linkableHrefs?: string[] | null;
 }

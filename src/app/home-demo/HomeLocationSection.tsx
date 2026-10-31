@@ -1,6 +1,5 @@
- "use client";
-
 import Image from "next/image";
+import { fetchLinkableHrefs } from "@/app/listings/fetchBrowseSectionData";
 
 const MAJOR_CITIES = [
   { name: "Adelaide",   href: "/listings/south-australia-state/adelaide-region/",    imgSrc: "/images/Adelaide.png"   },
@@ -75,7 +74,22 @@ const FILTERS = [
 ];
 
 
-export default function HomeLocationSection() {
+/** Server component (passed into the client home page as a prop) so the
+ * city/filter links are checked live before render: a region with no stock
+ * 410s, an empty band shows 0 results. Hidden links come back by themselves
+ * once stock arrives. */
+export default async function HomeLocationSection() {
+  const linkable = new Set(await fetchLinkableHrefs([
+    ...MAJOR_CITIES.map((c) => c.href),
+    ...MINOR_CITIES.map((c) => c.href),
+    ...FILTERS.flatMap((f) => f.items.map((i) => i.href)),
+  ]));
+  const majorCities = MAJOR_CITIES.filter((c) => linkable.has(c.href));
+  const minorCities = MINOR_CITIES.filter((c) => linkable.has(c.href));
+  const filters = FILTERS
+    .map((f) => ({ ...f, items: f.items.filter((i) => linkable.has(i.href)) }))
+    .filter((f) => f.items.length > 0);
+
   return (
     <section className="hloc-section">
       <div className="container">
@@ -89,7 +103,7 @@ export default function HomeLocationSection() {
         </div>
 
         <div className="hloc-major-grid">
-          {MAJOR_CITIES.map((city) => (
+          {majorCities.map((city) => (
             <a key={city.name} href={city.href} className="hloc-city-card">
               <div className="hloc-city-img-wrap">
                 <div className="hloc-city-circle" />
@@ -110,7 +124,7 @@ export default function HomeLocationSection() {
         </div>
 
         <div className="hloc-minor-wrap">
-          {MINOR_CITIES.map((city, idx) => (
+          {minorCities.map((city, idx) => (
             <a
               key={city.name}
               href={city.href}
@@ -128,7 +142,7 @@ export default function HomeLocationSection() {
         </div>
         <div className="hloc-filters">
           
-          {FILTERS.map((f) => (
+          {filters.map((f) => (
             <div key={f.label} className="hloc-filter-row">
               <div className="hloc-filter-label">
                 <span className="hloc-filter-icon-box">{f.icon}</span>
