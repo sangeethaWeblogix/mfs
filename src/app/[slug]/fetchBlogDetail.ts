@@ -100,7 +100,11 @@ export const fetchBlogDetail = cache(async (slug: string, seed?: number): Promis
       image: sanitizeImageUrl(p.featured_image),
     }));
 
+  // Keep the API's seo block — generateMetadata (page + layout) reads
+  // seo.metatitle / seo.metadescription from it; dropping it made every post
+  // fall back to "Product - Motorhomes for Sale".
   return {
+    seo: json?.seo ?? {},
     data: {
       blog_detail: post,
       related_blogs: related,

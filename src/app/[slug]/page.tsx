@@ -55,6 +55,7 @@ export async function generateMetadata({
   const title =
     seo.metatitle ||
     seo.meta_title ||
+    data?.data?.blog_detail?.title ||
     data?.title ||
     data?.name ||
     "Product - Motorhomes for Sale";
