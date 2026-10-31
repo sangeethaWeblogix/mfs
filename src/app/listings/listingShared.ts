@@ -43,6 +43,47 @@ export function normalizeListing(raw: any): Listing {
   };
 }
 
+// Blog content's product_sections carry the full product-detail payload
+// (category/make as { name, slug } objects, plus sku, dealer, description…)
+// — pick out only what ListingCard renders, so the private fields never
+// reach the page's client props.
+function toDisplayString(value: unknown): string {
+  if (value == null) return "";
+  if (typeof value === "object") {
+    const o = value as { name?: unknown; label?: unknown; value?: unknown; slug?: unknown };
+    return String(o.name ?? o.label ?? o.value ?? o.slug ?? "");
+  }
+  return String(value);
+}
+
+export function normalizeBlogProduct(raw: any): Listing {
+  const rawCategories: unknown[] = [raw.category ?? raw.categories ?? []].flat();
+  const thumbs: string[] = raw.r2_thumbnails ?? raw.image_format ?? [];
+  const length = parseFloat(String(raw.length ?? ""));
+  const weight = raw.gvm ?? raw.atm ?? raw.kg;
+
+  return {
+    id: raw.id,
+    name: raw.title ?? raw.name ?? "",
+    slug: raw.slug,
+    condition: raw.condition || "",
+    state: raw.state || undefined,
+    region: raw.region || undefined,
+    suburb: raw.suburb || undefined,
+    regular_price: raw.regular_price ?? "",
+    sale_price: raw.sale_price ?? null,
+    categories: rawCategories.map(toDisplayString).filter(Boolean),
+    image_format: thumbs.map((t) => `https://${t.replace(/^(https?:)?\/\//, "")}`),
+    seller_type: raw.seller_type,
+    kg: weight != null && weight !== "" ? String(weight) : undefined,
+    length: isNaN(length) ? undefined : length,
+    make: raw.make != null ? toDisplayString(raw.make) : undefined,
+    is_premium: raw.premium ?? raw.is_premium ?? false,
+    is_exclusive: raw.exclusive ?? raw.is_exclusive ?? false,
+    is_featured: raw.is_featured ?? raw.featured ?? false,
+  };
+}
+
 export type SeoV2 = {
   h1?: string;
   meta_title?: string;

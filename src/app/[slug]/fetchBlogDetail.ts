@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { normalizeBlogProduct } from "../listings/listingShared";
 
 const API_BASE = process.env.NEXT_PUBLIC_MFS_API_BASE;
 const API_KEY = process.env.MFS_API_KEY;
@@ -86,6 +87,15 @@ export const fetchBlogDetail = cache(async (slug: string, seed?: number): Promis
   if (post.featured_image) post.featured_image = sanitizeImageUrl(post.featured_image);
   if (post.image) post.image = sanitizeImageUrl(post.image);
   if (post.content) post.content = stripAdminHostFromAnchors(post.content);
+  // Cards embedded in the content (<div data-mpn-products="KEY">) — trimmed to
+  // card fields here so sku/dealer/description stay out of the page payload.
+  if (Array.isArray(post.product_sections)) {
+    post.product_sections = post.product_sections.map((section: any) => ({
+      key: section.key,
+      link: section.link ?? null,
+      products: (section.products ?? []).map(normalizeBlogProduct),
+    }));
+  }
   delete post.link;
 
   const listJson = await fetchJson(`${API_ROOT}/blog?vehicle_type=motorhomes&per_page=7${seedParam}`);

@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import FaqSection from "./FaqSection";
 import RelatedNews from "./RelatedNews";
 import BlogFeaturedListings from "./BlogFeaturedListings";
+import BlogContentProducts from "./BlogContentProducts";
+import type { Listing } from "../listings/listingShared";
 import "./details.css";
 import { useEffect, useRef, useState } from "react";
 import { formatPostDate } from "@/utils/date";
@@ -195,7 +197,15 @@ type BlogDetail = {
   content?: string;
   product_category?: string | string[];
   category_featured_products?: CategoryFeaturedProduct[];
+  product_sections?: ProductSection[];
   faq?: { heading: string; content: string }[];
+};
+
+// Already trimmed to card fields by fetchBlogDetail (normalizeBlogProduct).
+type ProductSection = {
+  key: string;
+  products: Listing[];
+  link?: { text: string; url: string } | null;
 };
 
 type FaqItem = {
@@ -233,6 +243,31 @@ export default function BlogDetailsPage({
   // ✅ Run DOMParser only on client
   const post = data?.data?.blog_detail;
   // console.log("dataaa", post);
+
+  // The blog content HTML embeds <div data-mpn-products="KEY"></div> markers
+  // at specific positions — split the content string around them and render
+  // a product grid (same ListingCard design as /listings/) in their place,
+  // using the matching key's products from product_sections.
+  const productSectionsByKey = new Map<string, ProductSection>(
+    (post?.product_sections ?? []).map((section) => [section.key, section])
+  );
+  const contentHtml = post?.content || "<p>No content available</p>";
+  const contentParts: ({ type: "html"; html: string } | { type: "products"; key: string })[] = [];
+  {
+    const placeholderRe = /<div[^>]*data-mpn-products="([^"]+)"[^>]*>\s*<\/div>/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = placeholderRe.exec(contentHtml)) !== null) {
+      if (match.index > lastIndex) {
+        contentParts.push({ type: "html", html: contentHtml.slice(lastIndex, match.index) });
+      }
+      contentParts.push({ type: "products", key: match[1] });
+      lastIndex = placeholderRe.lastIndex;
+    }
+    if (lastIndex < contentHtml.length) {
+      contentParts.push({ type: "html", html: contentHtml.slice(lastIndex) });
+    }
+  }
   useEffect(() => {
   if (post?.toc) {
     const parser = new DOMParser();
@@ -567,10 +602,19 @@ export default function BlogDetailsPage({
               <div
                 ref={blogContentRef}
                 className="all-news toc_hide_details"
-                dangerouslySetInnerHTML={{
-                  __html: post.content || "<p>No content available</p>",
-                }}
-              />
+              >
+                {contentParts.map((part, i) =>
+                  part.type === "html"
+                    ? <div key={i} dangerouslySetInnerHTML={{ __html: part.html }} />
+                    : (
+                      <BlogContentProducts
+                        key={i}
+                        products={productSectionsByKey.get(part.key)?.products ?? []}
+                        link={productSectionsByKey.get(part.key)?.link ?? undefined}
+                      />
+                    )
+                )}
+              </div>
               <div className="blog-share-row">
                 <span className="blog-share-row__label">Share this article</span>
                 {ShareButton}

@@ -122,7 +122,7 @@ const toTitleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
  
 
 /* ── Contact Seller Modal ── */
-function ContactModal({ item, onClose }: { item: Listing; onClose: () => void }) {
+export function ContactModal({ item, onClose }: { item: Listing; onClose: () => void }) {
   const { form, errors, touched, submitting, setField, onBlur, onSubmit } =
     useEnquiryForm({ id: item.id, slug: item.slug, name: item.name });
 
@@ -207,7 +207,7 @@ function ContactModal({ item, onClose }: { item: Listing; onClose: () => void })
 }
 
 /* ── Listing Card ── */
-function ListingCard({
+export function ListingCard({
   item,
   spotlight,
   onContact,
