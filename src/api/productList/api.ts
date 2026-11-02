@@ -53,7 +53,7 @@ export const fetchModelCounts = async (
   const timeoutId = setTimeout(() => controller.abort(), 8000);
   try {
     const res = await fetch(
-      `${MPN_BASE}/params-count?group_by=model&make=${encodeURIComponent(make)}`,
+      `${MPN_BASE}/params-count?group_by=model&motorhome_make=${encodeURIComponent(make)}`,
       {
         headers: mpnHeaders(),
         next: { revalidate: 3600 },

@@ -45,13 +45,18 @@ export function parseSlugToFilters(
     used: "Used",
   };
 
-  const hasReservedSuffix = (s: string) =>
+  // `allowBareYear` is only false when checking a segment for the make slot —
+  // a bare 4-digit value there is ambiguous (year/pincode), so it's excluded.
+  // Once make is already set, that same ambiguity doesn't apply: a bare
+  // 4-digit segment in the model slot is a numeric model name (e.g. Willow
+  // RV "2504"), not a year or pincode, so it must NOT be excluded there.
+  const hasReservedSuffix = (s: string, allowBareYear = false) =>
     /-(category|condition|state|region|suburb|keyword|vehicle-make)$/.test(s) ||
     /-(kg-gvm|length-in-feet|people-sleeping-capacity)$/.test(s) ||
     /^over-\d+/.test(s) ||
     /^under-\d+/.test(s) ||
     /^between-/.test(s) ||
-    /^\d{4}$/.test(s) ||
+    (!allowBareYear && /^\d{4}$/.test(s)) ||
     s.includes("="); // e.g. search=, keyword=
 
   slugParts.forEach((_part) => {
@@ -107,8 +112,12 @@ export function parseSlugToFilters(
       return;
     }
 
-    // Pincode only (rare case)
-    if (/^\d{4}$/.test(part)) {
+    // Pincode only (rare case) — only when no make is set yet. Once a make
+    // is already established, a bare 4-digit segment is almost certainly a
+    // numeric model name (e.g. Willow RV "2504"), not a postcode — postcodes
+    // on this site always arrive combined with a suburb via the
+    // `{suburb}-{pincode}-suburb` pattern handled above.
+    if (!filters.make && /^\d{4}$/.test(part)) {
       filters.pincode = part;
       return;
     }
@@ -251,17 +260,19 @@ export function parseSlugToFilters(
     }
 
     // make / model fallback – only if safe and no search is present
-    if (
-      !hasReservedSuffix(part) &&
-      !part.includes("=") &&
-      isNaN(Number(part)) &&
-      !filters.search // prevent make/model if search is there
-    ) {
+    if (!part.includes("=") && !filters.search) {
       if (!filters.make) {
-        filters.make = part;
+        // A bare number can't stand alone as a make (e.g. a stray numeric
+        // segment with no make context yet) — but once make is already set,
+        // a purely-numeric segment is a legitimate model name (plenty of RV
+        // models are numeric-only, e.g. Isuzu "300", Willow RV "2504") and
+        // must still be captured below, not rejected here.
+        if (!hasReservedSuffix(part) && isNaN(Number(part))) {
+          filters.make = part;
+        }
         return;
       }
-      if (!filters.model) {
+      if (!filters.model && !hasReservedSuffix(part, /* allowBareYear */ true)) {
         filters.model = part;
         return;
       }
