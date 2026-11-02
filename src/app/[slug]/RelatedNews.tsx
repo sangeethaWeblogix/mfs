@@ -65,6 +65,12 @@ export default function RelatedNews({ blogs }: { blogs: BlogPost[] }) {
                             alt={post.imageAlt || post.title}
                             fill
                             className=""
+                            // Blog images live on images.motorhomesforsale.com.au,
+                            // which 502s through Vercel's /_next/image optimizer in
+                            // production (confirmed live) despite being a whitelisted
+                            // host and loading fine directly — same fix as the blog
+                            // hero image in details.tsx.
+                            unoptimized={!!post.image}
                           />
                         </div>
                         <div className="product_de">

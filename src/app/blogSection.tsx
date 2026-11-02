@@ -78,6 +78,11 @@ export default function HomeLatestBlogs({ posts: rawPosts }: Props) {
                                 width={300}
                                 height={200}
                                 priority
+                                // images.motorhomesforsale.com.au 502s through
+                                // Vercel's /_next/image optimizer in production
+                                // (confirmed live) — same fix as the blog hero
+                                // image in [slug]/details.tsx.
+                                unoptimized
                               />
                             )}
                           </div>

@@ -157,6 +157,11 @@ const loading = !data || !blogPosts || blogPosts.length === 0 && data.totalPages
                                 width={1024}
                                 height={683}
                                 className="w-100 h-auto"
+                                // images.motorhomesforsale.com.au 502s through
+                                // Vercel's /_next/image optimizer in production
+                                // (confirmed live) — same fix as the blog hero
+                                // image in [slug]/details.tsx.
+                                unoptimized
                               />
                             </Link>
                           </div>
