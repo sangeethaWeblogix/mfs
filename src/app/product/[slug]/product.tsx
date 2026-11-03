@@ -218,7 +218,12 @@ export default function ClientLogger({
 
   const makeValue = getAttr("Make");
 
-  const slugify = (s: string) => s.trim().toLowerCase().replace(/\s+/g, "-");
+  // Colons are dropped entirely (not turned into a separator) — matches the
+  // backend's own slugifier, e.g. "4X4 Daily 40:10" -> "4x4-daily-4010".
+  // Confirmed live: keeping the colon produced a model link
+  // (/listings/iveco/4x4-daily-40:10/) the backend's own model list never
+  // matches, 410ing a real listing (flagged by Ahrefs as a broken link).
+  const slugify = (s: string) => s.trim().toLowerCase().replace(/:/g, "").replace(/\s+/g, "-");
   const toInt = (s: string) => {
     const n = parseInt(String(s).replace(/[^\d]/g, ""), 10);
     return Number.isFinite(n) ? n : null;
@@ -315,12 +320,11 @@ export default function ClientLogger({
     }
 
     // ---- fallback logic ----
-    if (L === "category" || L === "type") {
-      return v.split(",").map((c) => ({
-        href: `/listings/${slugify(c.replace(/\s*caravan\s*/gi, " ").trim())}-category/`,
-        text: c.trim(),
-      }));
-    }
+    // Category/type never gets a link — this site has no category filter
+    // (parseSlugToFilters intentionally never parses "*-category" slugs), so
+    // every one of these links 410'd (confirmed live via Ahrefs' "Page has
+    // links to broken page" report on /listings/motorhomes-category/).
+    // Rendered as plain text via the no-links fallback below instead.
 
     if (L === "make") return [{ href: `/listings/${slugify(v)}/`, text: v }];
 

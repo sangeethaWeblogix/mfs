@@ -18,6 +18,12 @@ function modelSlug(model: string): string {
   return model
     .trim()
     .toLowerCase()
+    // Colons are dropped entirely (not turned into a separator) — matches
+    // the backend's own slugifier, e.g. "4X4 Daily 40:10" -> "4x4-daily-4010".
+    // Confirmed live: keeping the colon as "40:10" produced a canonical slug
+    // the backend's params-count model list never matches, 410ing a real
+    // listing (/listings/iveco/4x4-daily-40:10/ via Ahrefs).
+    .replace(/:/g, "")
     .replace(/\./g, "-")  // dots → hyphens (prevents Next.js treating as file extension)
     .replace(/\s+/g, "-") // spaces → hyphens
     .replace(/-+/g, "-")  // collapse multiple hyphens

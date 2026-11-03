@@ -1,102 +1,51 @@
-// Edge-runtime-safe: no fs, path, or process.cwd()
+// Edge-runtime-safe: no fs, path, or process.cwd() — middleware can't read
+// src/app/url.csv (INDEXABLE_URLS) directly for the same reason, so these
+// lists are kept in sync with it by hand. They must exactly match
+// scripts/regenerate-url-csv.mjs's PRICE_PATHS/GVM_PATHS/LENGTH_PATHS/
+// SLEEP_PATHS (the actual bands curated into url.csv and
+// attributes-others-sitemap.xml) — a prior mismatch here (finer-grained
+// bands than what's actually curated) made middleware's X-Robots-Tag header
+// say noindex on 238 pages that url.csv/the sitemap/the page's own <meta
+// robots> all correctly marked indexable (confirmed live via Ahrefs'
+// "Noindex page in sitemap" report).
 
 export const PRICE_BANDS_ORDERED = [
-  "under-10000",
-  "between-10000-20000",
-  "under-20000",
-  "between-20000-30000",
-  "under-30000",
-  "between-30000-40000",
-  "under-40000",
-  "between-40000-50000",
   "under-50000",
-  "between-50000-60000",
-  "under-60000",
-  "between-60000-70000",
-  "under-70000",
-  "between-70000-80000",
-  "under-80000",
-  "between-80000-90000",
-  "under-90000",
-  "between-90000-100000",
+  "under-75000",
   "under-100000",
-  "between-100000-125000",
-  "under-125000",
-  "between-125000-150000",
   "under-150000",
-  "between-150000-175000",
-  "under-175000",
-  "between-175000-200000",
   "under-200000",
-  "between-200000-225000",
-  "under-225000",
-  "between-225000-250000",
-  "under-250000",
-  "between-250000-275000",
-  "under-275000",
-  "between-275000-300000",
-  "under-300000",
+  "between-50000-75000",
+  "between-75000-100000",
+  "between-100000-150000",
+  "between-150000-200000",
+  "between-200000-300000",
   "over-200000",
+  "over-300000",
 ];
 
 export const GVM_BANDS_ORDERED = [
-  "under-600-kg-gvm",
-  "under-800-kg-gvm",
-  "under-1000-kg-gvm",
-  "under-1250-kg-gvm",
-  "under-1500-kg-gvm",
-  "under-1750-kg-gvm",
-  "under-2000-kg-gvm",
-  "under-2250-kg-gvm",
-  "under-2500-kg-gvm",
-  "under-2750-kg-gvm",
-  "under-3000-kg-gvm",
   "under-3500-kg-gvm",
-  "under-4000-kg-gvm",
-  "under-4500-kg-gvm",
-  "over-3500-kg-gvm",
+  "between-3500-kg-4500-kg-gvm",
+  "between-4500-kg-6000-kg-gvm",
+  "between-6000-kg-8000-kg-gvm",
+  "over-8000-kg-gvm",
 ];
 
 export const SLEEP_BANDS_ORDERED = [
-  "under-2-people-sleeping-capacity",
-  "between-2-2-people-sleeping-capacity",
-  "under-3-people-sleeping-capacity",
-  "between-3-3-people-sleeping-capacity",
-  "under-4-people-sleeping-capacity",
-  "between-4-4-people-sleeping-capacity",
-  "under-5-people-sleeping-capacity",
-  "between-5-5-people-sleeping-capacity",
-  "between-6-6-people-sleeping-capacity",
+  "2-people-sleeping-capacity",
+  "3-people-sleeping-capacity",
+  "4-people-sleeping-capacity",
+  "5-people-sleeping-capacity",
   "over-5-people-sleeping-capacity",
 ];
 
 export const LENGTH_BANDS_ORDERED = [
-  "under-12-length-in-feet",
-  "under-13-length-in-feet",
-  "between-12-14-length-in-feet",
-  "under-14-length-in-feet",
-  "under-15-length-in-feet",
-  "between-14-16-length-in-feet",
-  "under-16-length-in-feet",
-  "under-17-length-in-feet",
-  "between-16-18-length-in-feet",
-  "under-18-length-in-feet",
-  "under-19-length-in-feet",
-  "between-18-20-length-in-feet",
   "under-20-length-in-feet",
-  "under-21-length-in-feet",
-  "between-20-22-length-in-feet",
-  "under-22-length-in-feet",
-  "under-23-length-in-feet",
-  "between-22-24-length-in-feet",
-  "under-24-length-in-feet",
-  "under-25-length-in-feet",
-  "between-24-26-length-in-feet",
-  "under-26-length-in-feet",
-  "under-27-length-in-feet",
-  "between-26-28-length-in-feet",
-  "under-28-length-in-feet",
-  "over-24-length-in-feet",
+  "between-20-23-length-in-feet",
+  "between-23-26-length-in-feet",
+  "between-26-30-length-in-feet",
+  "over-30-length-in-feet",
 ];
 
 export const ALLOWED_PRICE_BANDS  = new Set(PRICE_BANDS_ORDERED);

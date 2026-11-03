@@ -104,17 +104,34 @@ async function fetchAllBandCountsServer(scope: Record<string, string>) {
  * — same path for both indexed and noindex pages.
  */
 export async function fetchBrowseSectionData(
-  filters: { state?: string; region?: string; category?: string },
+  filters: { state?: string; region?: string; category?: string; make?: string },
 ): Promise<BrowseSectionData> {
-  const { state, region, category } = filters;
+  const { state, region, category, make } = filters;
   const hasState = !!state;
   const hasRegion = !!region;
   const hasCategory = !!category;
+  const hasMake = !!make;
 
   const categoryOnly            = !hasState && hasCategory;
   const stateRegionMode         = hasState && hasRegion && !hasCategory;
   const categoryStateMode       = hasState && hasCategory && !hasRegion;
   const categoryStateRegionMode = hasState && hasCategory && hasRegion;
+  // A make-only page (e.g. /listings/{make}/) had no internal links to its
+  // own /listings/{make}/{state}-state/ sub-pages anywhere on the site —
+  // confirmed via Ahrefs flagging 166 of them as orphan pages (indexable,
+  // in the sitemap, but zero incoming internal links). This mode fetches
+  // the make-scoped state counts so StateBrowseSection can render real,
+  // server-rendered links to them.
+  const makeOnly = hasMake && !hasState && !hasCategory;
+
+  if (makeOnly) {
+    // fetchGroupCountsServer's params_count (underscore) endpoint 404s on the
+    // live backend — use the same working params-count (hyphen) endpoint
+    // middleware's own make/model validation already relies on.
+    const json = await fetchParamsCountServer(`group_by=state&motorhome_make=${encodeURIComponent(make!)}`);
+    const stateCounts: CountItem[] = Array.isArray(json?.data) ? json.data : [];
+    return { stateCounts };
+  }
 
   if (categoryOnly) {
     const scope = { category: category! };

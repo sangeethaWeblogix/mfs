@@ -7,6 +7,7 @@ import {
   stateLabel,
   cleanRegionName,
   // TYPES_NO_STATE, // type section disabled — should not appear on the listing page
+  STATES,
   PRICE_BANDS,
   GVM_BANDS,
   LENGTH_BANDS,
@@ -62,21 +63,30 @@ interface Props {
   state?: string;
   region?: string;
   category?: string;
+  make?: string;
   /** Server-fetched counts (SSR/ISR) for the current filters — when present,
    * seeds the pills/links straight into the first render (so they land in
    * page source for crawlers) and skips the redundant client-side refetch. */
   initialData?: BrowseSectionData;
 }
 
-export default function StateBrowseSection({ state, region, category, initialData }: Props) {
+export default function StateBrowseSection({ state, region, category, make, initialData }: Props) {
   const hasState    = !!state;
   const hasRegion   = !!region;
   const hasCategory = !!category;
+  const hasMake     = !!make;
 
   const categoryOnly            = !hasState && hasCategory;
   const stateRegionMode         = hasState && hasRegion && !hasCategory;
   const categoryStateMode       = hasState && hasCategory && !hasRegion;
   const categoryStateRegionMode = hasState && hasCategory && hasRegion;
+  // A make-only page (e.g. /listings/{make}/) had no internal links anywhere
+  // on the site to its own /listings/{make}/{state}-state/ sub-pages —
+  // confirmed via Ahrefs flagging 166 of them as orphan pages (indexable, in
+  // the sitemap, but zero incoming internal links). initialData.stateCounts
+  // is seeded server-side (fetchBrowseSectionData's makeOnly branch) so
+  // these links land in the first server-rendered HTML for crawlers.
+  const makeOnly = hasMake && !hasState && !hasCategory;
 
   // Every dynamic mode below shares this same count state — only one mode is
   // ever active for a given render, so there's no cross-talk between fetches.
@@ -224,6 +234,34 @@ export default function StateBrowseSection({ state, region, category, initialDat
       </div>
     );
   };
+
+  if (makeOnly) {
+    const statePanel = STATES
+      .filter((s) => stateCounts === null || (stateCounts.find((sc) => sc.slug === s.href.replace(/^\/listings\/|-state\/$/g, ""))?.count ?? 0) > 0)
+      .map((s) => ({
+        text: s.name,
+        href: `/listings/${make}${s.href.replace(/^\/listings/, "")}`,
+      }));
+
+    if (statePanel.length === 0) return null;
+
+    const makeLabel = make!.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+
+    return (
+      <section className="lsd-browse">
+        <div className="container">
+          <div className="lsd-browse__panel">
+            <h3 className="lsd-browse__panel-title">{`Browse ${makeLabel} Motorhomes by State`}</h3>
+            <div className="lsd-browse__pills">
+              {statePanel.map((s) => (
+                <a key={s.href} href={s.href} className="lsd-browse__pill">{s.text}</a>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (categoryOnly) {
     const label = categoryLabel(category!);

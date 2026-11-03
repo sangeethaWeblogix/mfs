@@ -157,17 +157,29 @@ async function main() {
   const urls = new Set([`${SITE_URL}/listings/`]);
 
   const results = await Promise.all(API_TYPES.map((t) => fetchType(t)));
+
+  // buildAttributesOthersPaths() below is static (no API call), so it alone
+  // always keeps `urls` non-empty even when every live API_TYPES fetch fails
+  // (confirmed live: a run where the backend rejected/blocked every request —
+  // e.g. the backend's region-block hitting a GitHub-hosted runner's IP,
+  // same class of issue already worked around elsewhere with Vercel's
+  // syd1-pinned region, which this plain script has no way to request —
+  // silently wrote a url.csv containing only the ~190 static band paths and
+  // dropped every real states/makes/models/etc. URL, emptying every one of
+  // those sitemaps). Guard against that specific failure mode explicitly,
+  // not just the "truly nothing at all" case.
+  const totalApiUrls = results.reduce((sum, paths) => sum + paths.length, 0);
+  if (totalApiUrls === 0) {
+    console.error("Every live API_TYPES fetch returned zero URLs — not overwriting url.csv.");
+    process.exit(1);
+  }
+
   results.forEach((paths) => {
     for (const p of paths) urls.add(`${SITE_URL}/listings/${p}`);
   });
 
   for (const p of buildAttributesOthersPaths()) {
     urls.add(`${SITE_URL}/listings/${p}`);
-  }
-
-  if (urls.size === 0) {
-    console.error("Fetched zero URLs from every type — not overwriting url.csv.");
-    process.exit(1);
   }
 
   const sorted = Array.from(urls).sort();

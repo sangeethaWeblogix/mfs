@@ -797,7 +797,7 @@ export default function StateHome({
               hideBanners={!!filters.make}
             />
           )}
-          <StateBrowseSection state={filters.state} region={filters.region} category={filters.category} initialData={browseData} />
+          <StateBrowseSection state={filters.state} region={filters.region} category={filters.category} make={filters.make} initialData={browseData} />
           <StateContent footerDescription={ip.seo?.footer_description} faq={ip.seo?.faq} />
           {filters.category === 'off-road' && (
             <section className="lsd-offroad-extra"><div className="container">
@@ -844,7 +844,7 @@ export default function StateHome({
           showSpotlight={true}
           hideViewAll
         />
-        <StateBrowseSection state={filters.state} region={filters.region} category={filters.category} initialData={browseData} />
+        <StateBrowseSection state={filters.state} region={filters.region} category={filters.category} make={filters.make} initialData={browseData} />
         <StateContent footerDescription={initialSeo.footer_description} faq={initialSeo.faq} />
         <div className="lsd-sell-cta">
           <div className="container">
@@ -945,7 +945,7 @@ export default function StateHome({
 
         {maxPages > 1 && pagination}
 
-        <StateBrowseSection state={filters.state} region={filters.region} category={filters.category} initialData={browseData} />
+        <StateBrowseSection state={filters.state} region={filters.region} category={filters.category} make={filters.make} initialData={browseData} />
         <StateContent footerDescription={seo?.footer_description} faq={seo?.faq} />
         {filters.category === 'off-road' && (
           <section className="lsd-offroad-extra"><div className="container">
@@ -1011,7 +1011,7 @@ export default function StateHome({
 
       {maxPages > 1 && pagination}
 
-      <StateBrowseSection state={filters.state} region={filters.region} category={filters.category} initialData={browseData} />
+      <StateBrowseSection state={filters.state} region={filters.region} category={filters.category} make={filters.make} initialData={browseData} />
       <StateContent footerDescription={seo?.footer_description} faq={seo?.faq} />
       {filters.category === 'off-road' && (
         <section className="lsd-offroad-extra"><div className="container">
