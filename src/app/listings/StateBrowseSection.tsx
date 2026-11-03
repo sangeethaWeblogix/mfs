@@ -251,7 +251,7 @@ export default function StateBrowseSection({ state, region, category, make, init
       <section className="lsd-browse">
         <div className="container">
           <div className="lsd-browse__panel">
-            <h3 className="lsd-browse__panel-title">{`Browse ${makeLabel} Motorhomes by State`}</h3>
+            <h3 className="lsd-browse__panel-title">{`Browse ${makeLabel} by State`}</h3>
             <div className="lsd-browse__pills">
               {statePanel.map((s) => (
                 <a key={s.href} href={s.href} className="lsd-browse__pill">{s.text}</a>
