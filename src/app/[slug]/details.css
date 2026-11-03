@@ -1360,7 +1360,7 @@ tr {
 }
 
 /* ── Content typography ── */
-.blog-article-main h2.wp-block-heading {
+.blog-article-main h2.wp-block-heading, .blog-article-main h2 {
   font-size: 1.45rem;
   font-weight: 700;
   color: #0c1f3f;
