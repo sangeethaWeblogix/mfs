@@ -438,11 +438,19 @@
              ", " +
              (rawFollow === "nofollow" ? "nofollow" : "follow");
 
-           // Band pages: noindex unless it's a single allowed band filter with no other filters.
+           // Band pages: noindex unless it's a single allowed band filter,
+           // optionally combined with just a state (no other filters). State
+           // is deliberately exempted here — url.csv/attributes-others-sitemap.xml
+           // curate real {state}-state/{band}/ combo pages (confirmed live
+           // organic value, e.g. "motorhomes under $50k in Victoria"), so
+           // noindexing every one of them contradicted the page's own <meta
+           // robots> and its sitemap listing (Ahrefs' "Noindex page in
+           // sitemap" report). Make/model/region/category have no such
+           // curated combo and still fully disqualify the page.
            const hasBand = !!(filters.maxKg || filters.minKg || filters.to_price || filters.from_price ||
              filters.to_length || filters.from_length || filters.to_sleep || filters.from_sleep);
-           const hasOtherFilters = !!(filters.make || filters.model || filters.state || filters.region || filters.category);
-           const isSingleAllowedBand = hasBand && !hasOtherFilters && isAllowedSingleBand(slugParts);
+           const hasDisqualifyingFilters = !!(filters.make || filters.model || filters.region || filters.category);
+           const isSingleAllowedBand = hasBand && !hasDisqualifyingFilters && isAllowedSingleBand(slugParts);
            if (hasBand && !isSingleAllowedBand) {
              robotsHeader = "noindex, nofollow";
            }

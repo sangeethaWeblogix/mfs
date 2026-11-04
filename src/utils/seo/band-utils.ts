@@ -48,19 +48,38 @@ export const LENGTH_BANDS_ORDERED = [
   "over-30-length-in-feet",
 ];
 
+// Still exported for attributes-others-sitemap.xml / the regenerate script's
+// own curated band set — but isAllowedSingleBand below no longer restricts
+// to just these. The backend's own /sitemap/price, /sitemap/gvm and
+// /sitemap/length endpoints generate a much finer-grained set of bands
+// (e.g. "between-70000-80000", confirmed live) that are deliberately kept in
+// url.csv and given their own sitemaps (prices-sitemap.xml/weights-sitemap.xml/
+// length-sitemap.xml) — matching against only the curated subset here noindexed
+// those real, already-indexable (one even already ranking with organic
+// traffic) pages. Sleeping capacity has no such live backend sitemap, so it
+// stays matched against the curated set only.
 export const ALLOWED_PRICE_BANDS  = new Set(PRICE_BANDS_ORDERED);
 export const ALLOWED_GVM_BANDS    = new Set(GVM_BANDS_ORDERED);
 export const ALLOWED_SLEEP_BANDS  = new Set(SLEEP_BANDS_ORDERED);
 export const ALLOWED_LENGTH_BANDS = new Set(LENGTH_BANDS_ORDERED);
+
+function isWellFormedGvmBand(s: string): boolean {
+  return /^(under|over)-\d+-kg-gvm$/.test(s) || /^between-\d+-kg-\d+-kg-gvm$/.test(s);
+}
+
+function isWellFormedLengthBand(s: string): boolean {
+  return /^(under|over)-\d+-length-in-feet$/.test(s) || /^between-\d+-\d+-length-in-feet$/.test(s);
+}
 
 export function isAllowedSingleBand(slugSegments: string[]): boolean {
   const price  = slugSegments.find(s => /^(under|over)-\d+$/.test(s) || /^between-\d+-\d+$/.test(s));
   const gvm    = slugSegments.find(s => s.includes("-kg-gvm"));
   const sleep  = slugSegments.find(s => s.includes("-people-sleeping-capacity"));
   const length = slugSegments.find(s => s.includes("-length-in-feet"));
-  if (price)  return ALLOWED_PRICE_BANDS.has(price);
-  if (gvm)    return ALLOWED_GVM_BANDS.has(gvm);
+  // price's find() predicate above already fully validates its shape.
+  if (price)  return true;
+  if (gvm)    return isWellFormedGvmBand(gvm);
   if (sleep)  return ALLOWED_SLEEP_BANDS.has(sleep);
-  if (length) return ALLOWED_LENGTH_BANDS.has(length);
+  if (length) return isWellFormedLengthBand(length);
   return false;
 }

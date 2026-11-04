@@ -184,7 +184,11 @@ function normalizeProductDetail(raw: any) {
     slug: raw.slug,
     name: raw.title,
     description: raw.description,
-    image_url: raw.images_full?.length ? raw.images_full : raw.r2_thumbnails,
+    // Backend returns these as raw http:// (confirmed live) — rendered as-is
+    // on an https:// page, that's the "HTTPS/HTTP mixed content" warning
+    // Ahrefs flagged across ~1,936 pages, the product gallery included.
+    image_url: (raw.images_full?.length ? raw.images_full : raw.r2_thumbnails ?? [])
+      .map((t: string) => `https://${t.replace(/^(https?:)?\/\//, "")}`),
     regular_price: raw.regular_price,
     sale_price: raw.sale_price,
     make: raw.make?.name,
@@ -240,7 +244,8 @@ function normalizeSimilarItem(raw: any) {
     id: raw.id,
     name: raw.title ?? raw.name ?? "",
     slug: raw.slug,
-    image_format: Array.isArray(raw.r2_thumbnails) ? raw.r2_thumbnails : (raw.image_format ?? []),
+    image_format: (Array.isArray(raw.r2_thumbnails) ? raw.r2_thumbnails : (raw.image_format ?? []))
+      .map((t: string) => `https://${t.replace(/^(https?:)?\/\//, "")}`),
     regular_price: raw.regular_price,
     sale_price: raw.sale_price,
     state: raw.state,

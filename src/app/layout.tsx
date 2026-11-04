@@ -25,6 +25,12 @@ import fetchListingsForHead, { buildListingsJsonLd, buildBreadcrumbs } from "@/u
 import { fetchLinkableHrefs } from "@/app/listings/fetchBrowseSectionData";
 import { FOOTER_LISTING_HREFS } from "./footer/footerLinks";
 
+  // Fallback og:image/twitter:image for pages with no product-specific photo
+  // (listings filter pages, static pages) — og:type/og:image and twitter:card
+  // were missing entirely on these, which is what Ahrefs' "Open Graph tags
+  // incomplete"/"X (Twitter) card incomplete" reports flagged (confirmed live).
+  const DEFAULT_OG_IMAGE = "https://www.motorhomesforsale.com.au/images/mfs-logo.png";
+
   const montserrat = Montserrat({
     subsets: ["latin"],
     weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
@@ -164,9 +170,16 @@ import { FOOTER_LISTING_HREFS } from "./footer/footerLinks";
           {staticMeta && <meta property="og:title" content={staticMeta.title} />}
           {staticMeta && <meta property="og:description" content={staticMeta.description} />}
           {staticMeta && <meta property="og:url" content={staticMeta.canonical} />}
+          {staticMeta && <meta property="og:type" content="website" />}
+          {staticMeta && <meta property="og:image" content={DEFAULT_OG_IMAGE} />}
+          {staticMeta && <meta name="twitter:card" content="summary_large_image" />}
           {staticMeta && <meta name="twitter:title" content={staticMeta.title} />}
           {staticMeta && <meta name="twitter:description" content={staticMeta.description} />}
-          {/* Product page SEO — injected here to avoid metadata-in-body streaming issue */}
+          {staticMeta && <meta name="twitter:image" content={DEFAULT_OG_IMAGE} />}
+          {/* Product page SEO — injected here to avoid metadata-in-body streaming issue.
+              og:type/twitter:card and friends are NOT added here — product/[slug]/page.tsx's
+              own generateMetadata already renders a complete, correct set (confirmed live);
+              duplicating them here would just create duplicate meta tags. */}
           {isProductPage && productMeta.title && <title>{productMeta.title}</title>}
           {isProductPage && productMeta.description && <meta name="description" content={productMeta.description} />}
           {isProductPage && productMeta.canonical && <link rel="canonical" href={productMeta.canonical} />}
@@ -185,8 +198,12 @@ import { FOOTER_LISTING_HREFS } from "./footer/footerLinks";
           {isListingSlug && slugTitle && <meta property="og:title" content={slugTitle} />}
           {isListingSlug && slugDescription && <meta property="og:description" content={slugDescription} />}
           {isListingSlug && slugCanonical && <meta property="og:url" content={slugCanonical} />}
+          {isListingSlug && <meta property="og:type" content="website" />}
+          {isListingSlug && <meta property="og:image" content={DEFAULT_OG_IMAGE} />}
+          {isListingSlug && <meta name="twitter:card" content="summary_large_image" />}
           {isListingSlug && slugTitle && <meta name="twitter:title" content={slugTitle} />}
           {isListingSlug && slugDescription && <meta name="twitter:description" content={slugDescription} />}
+          {isListingSlug && <meta name="twitter:image" content={DEFAULT_OG_IMAGE} />}
           {/* Contact page JSON-LD */}
           {isContactPage && (
             <script

@@ -32,11 +32,15 @@ export const fetchProductMeta = cache(async (slug: string): Promise<ProductMeta>
     const description = seo.metadescription || seo.meta_description || pd.short_description || "";
     const canonical = `https://www.motorhomesforsale.com.au/product/${slug}/`;
     const imageUrlRaw = pd.image_url;
-    const ogImage: string = Array.isArray(imageUrlRaw)
+    const rawOgImage: string = Array.isArray(imageUrlRaw)
       ? imageUrlRaw.filter(Boolean)[0] ?? ""
       : typeof imageUrlRaw === "string"
       ? imageUrlRaw
       : "";
+    // A handful of listings have no product photos at all (confirmed live) —
+    // falling back to the site logo instead of leaving og:image/twitter:image
+    // unset is what Ahrefs' "Open Graph tags incomplete" report flagged.
+    const ogImage = rawOgImage || "https://www.motorhomesforsale.com.au/images/mfs-logo.png";
     return { title, description, canonical, ogImage };
   } catch {
     return empty;

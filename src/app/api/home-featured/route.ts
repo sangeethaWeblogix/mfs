@@ -25,6 +25,11 @@ function normalizeProduct(p: any): any {
   } else if (typeof p.image_format === "string") {
     p.image_format = [p.image_format];
   }
+  // Backend returns these as raw http:// (confirmed live) — rendered as-is on
+  // an https:// page, that's the "HTTPS/HTTP mixed content" warning Ahrefs
+  // flagged across ~1,936 pages.
+  p.image_format = (p.image_format as string[]).map((t) => `https://${t.replace(/^(https?:)?\/\//, "")}`);
+  delete p.r2_thumbnails; // otherwise its raw http:// URLs still leak into the response
   if (!p.seller_type) p.seller_type = "dealer";
   return p;
 }

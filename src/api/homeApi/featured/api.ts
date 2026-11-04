@@ -38,6 +38,11 @@ function normalizeProduct(p: any): FeaturedListing {
   } else if (typeof p.image_format === "string") {
     p.image_format = [p.image_format];
   }
+  // Backend returns these as raw http:// (confirmed live) — rendered as-is on
+  // an https:// page, that's the "HTTPS/HTTP mixed content" warning Ahrefs
+  // flagged across ~1,936 pages, this home-featured carousel included.
+  p.image_format = (p.image_format as string[]).map((t) => `https://${t.replace(/^(https?:)?\/\//, "")}`);
+  delete p.r2_thumbnails; // otherwise its raw http:// URLs still leak into the client props
   if (!p.seller_type) p.seller_type = "dealer";
   return p;
 }

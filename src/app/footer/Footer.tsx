@@ -287,6 +287,7 @@ const Footer = ({ linkableHrefs }: Props) => {
               <li><a href="/privacy-policy/" rel="nofollow">Privacy Policy</a></li>
               <li><a href="/privacy-collection-statement/" rel="nofollow">Privacy Collection Statement</a></li>
               <li><a href="/cookie-policy/" rel="nofollow">Cookie Policy</a></li>
+              <li><a href="/site-map/">Site Map</a></li>
             </ul>
             <p className="ftr-bottom__copy">
               © {currentYear ?? "----"} Marketplace Network Pty Ltd · ABN 70 694 987 052

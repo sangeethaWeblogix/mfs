@@ -72,7 +72,14 @@ async function filterLiveModels(paths: string[]): Promise<string[]> {
   });
 }
 
-export async function fetchSitemapPaths(type: string): Promise<string[]> {
+/**
+ * `revalidateSeconds` lets callers opt into Next's fetch cache instead of
+ * the XML sitemap routes' always-live `no-store` — the HTML /site-map/ page
+ * doesn't need per-request freshness and would otherwise re-run every one
+ * of these live backend calls (states/makes/models/etc., several with their
+ * own nested filterLiveModels cross-checks) on every single visit.
+ */
+export async function fetchSitemapPaths(type: string, revalidateSeconds?: number): Promise<string[]> {
   if (!API_BASE) return [];
   try {
     const res = await fetch(`${API_BASE}/sitemap/${type}?min_count=1&bust_cache=0`, {
@@ -80,7 +87,7 @@ export async function fetchSitemapPaths(type: string): Promise<string[]> {
         Accept: "application/json",
         ...(API_KEY && { "X-Secret-Key": API_KEY }),
       },
-      cache: "no-store",
+      ...(revalidateSeconds ? { next: { revalidate: revalidateSeconds } } : { cache: "no-store" }),
     });
     if (!res.ok) return [];
 
@@ -105,7 +112,7 @@ export async function fetchSitemapPaths(type: string): Promise<string[]> {
  * page in sitemap". /product/ pages have no such policy (always indexable),
  * so this only applies when prefix is "listings".
  */
-function filterIndexable(paths: string[], prefix: "listings" | "product"): string[] {
+export function filterIndexable(paths: string[], prefix: "listings" | "product"): string[] {
   if (prefix !== "listings") return paths;
   return paths.filter((path) => INDEXABLE_URLS.has(`/listings/${path}`));
 }

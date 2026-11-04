@@ -30,14 +30,26 @@ export type Listing = {
  * already applied to /home-featured's response in fetchHomeFeatured's
  * normalizeProduct. Without this, cards silently render a blank title/image. */
 export function normalizeListing(raw: any): Listing {
+  // r2_thumbnails/image_format come back as raw http:// from the backend
+  // (confirmed live) — rendered as-is on an https:// page, that's the exact
+  // "HTTPS/HTTP mixed content" warning Ahrefs flagged across ~1,936 pages.
+  // Same upgrade already applied in normalizeBlogProduct below.
+  const thumbs: string[] = Array.isArray(raw.image_format)
+    ? raw.image_format
+    : Array.isArray(raw.r2_thumbnails)
+      ? raw.r2_thumbnails
+      : [];
+
   return {
     ...raw,
     name: raw.name ?? raw.title ?? "",
-    image_format: Array.isArray(raw.image_format)
-      ? raw.image_format
-      : Array.isArray(raw.r2_thumbnails)
-        ? raw.r2_thumbnails
-        : undefined,
+    image_format: thumbs.length > 0
+      ? thumbs.map((t) => `https://${t.replace(/^(https?:)?\/\//, "")}`)
+      : undefined,
+    // Drop the raw field — otherwise the `...raw` spread above carries its
+    // original http:// URLs straight into the client props/RSC payload
+    // alongside the fixed image_format, defeating the upgrade above.
+    r2_thumbnails: undefined,
     categories: raw.categories ?? (Array.isArray(raw.category) ? raw.category : raw.category ? [raw.category] : []),
     kg: raw.kg ?? (raw.gvm != null ? String(raw.gvm) : undefined),
   };

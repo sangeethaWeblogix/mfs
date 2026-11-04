@@ -12,6 +12,7 @@ const staticUrls = [
   "contact",
   "dealer-advertising",
   "sell-my-motorhome",
+  "site-map",
 ];
 
 export async function GET() {
