@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
+import { trackListingView } from "@/utils/engagement";
 import Link from "next/link";
 import Image from "next/image";
 import { useEnquiryForm } from "@/app/components/ListContent/enquiryform";
@@ -475,6 +476,12 @@ const priceUpperIdx = !isPOA ? PRICE_STEPS.findIndex(s => s >= displayPrice) : -
       .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.slug]);
+
+  // Distinct listing views count towards visitor qualification (see utils/engagement.ts)
+  useEffect(() => {
+    const listingId = product.id ?? (product.slug ? `slug:${product.slug}` : null);
+    if (listingId != null && listingId !== "") trackListingView(listingId);
+  }, [product.id, product.slug]);
 
   const [descOpen, setDescOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
