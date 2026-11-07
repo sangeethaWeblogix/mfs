@@ -301,7 +301,7 @@ import { FOOTER_LISTING_HREFS } from "./footer/footerLinks";
                   j.async=true;
                   j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
                   f?f.parentNode.insertBefore(j,f):d.head.appendChild(j);
-                })(window,document,'script','dataLayer','GTM-N3362FGQ');
+                })(window,document,'script','dataLayer','GTM-MKNH3KX8');
               `,
             }}
           />
@@ -315,7 +315,7 @@ import { FOOTER_LISTING_HREFS } from "./footer/footerLinks";
           {/* ✅ Google Tag Manager (noscript) - right after body */}
          <noscript>
   <iframe
-    src="https://www.googletagmanager.com/ns.html?id=GTM-N3362FGQ"
+    src="https://www.googletagmanager.com/ns.html?id=GTM-MKNH3KX8"
     height="0"
     width="0"
     style={{ display: "none", visibility: "hidden" }}
