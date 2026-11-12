@@ -8,13 +8,13 @@ export type FaqCategoryKey =
   | "features";
 
 export const FAQ_CATEGORIES: { key: FaqCategoryKey; label: string }[] = [
-  { key: "general", label: "General & Types" },
   { key: "buying", label: "Buying & Used" },
   { key: "brands", label: "Brands" },
   { key: "prices", label: "Prices & Finance" },
   { key: "locations", label: "Locations" },
   { key: "selling", label: "Selling" },
   { key: "features", label: "Features & Travel" },
+  { key: "general", label: "General & Types" },
 ];
 
 export interface FaqItem {
