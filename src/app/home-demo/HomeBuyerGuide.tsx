@@ -1,8 +1,17 @@
 import Image from "next/image";
+import HomeFaq from "./HomeFaq";
+import { buildHomeFaqJsonLd } from "./homeFaqData";
 
 export default function HomeBuyerGuide() {
+  const faqJsonLd = buildHomeFaqJsonLd();
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+
       {/* ── Buyer Guide ── */}
       <section className="hbg-section">
         <div className="container">
@@ -32,16 +41,23 @@ export default function HomeBuyerGuide() {
             {/* Right: Text */}
             <div className="hbg-text-col">
               <h2 className="hbg-title">
-                Motorhomes for Sale Australia: <span className="hbg-title-accent">Buyer Guide</span>
+                Motorhomes for Sale in Australia <span className="hbg-title-accent">– Buy with Confidence</span>
               </h2>
-              
+
               <p className="hbg-body">
-                MotorhomesForSale.com.au helps Australian buyers browse and compare new and used motorhomes in one convenient place. Review prices, layouts, features and key specifications before contacting a private seller or visiting a dealership. Compare important details such as year, make, model, sleeping capacity, length, fuel type, transmission, tare weight, GVM and payload capacity to narrow down the options that suit your needs.
+                Looking to buy a motorhome in Australia? MotorhomesForSale.com.au helps you browse and compare new and used motorhomes for sale from dealerships and private sellers nationwide. Whether you&apos;re buying your first motorhome, upgrading or searching for an affordable second-hand model, find a vehicle that suits your budget and travel plans.
               </p>
               <p className="hbg-body">
-                Use the search filters to browse available motorhomes by state, location, price, condition, make, sleeping capacity and length. You can then compare standard features, optional upgrades, warranty coverage, finance options and trade-in availability before making your decision. When buying a used motorhome, also check its service history, registration status, overall condition and maintenance records. Our platform makes it easier to research available listings and find the right motorhome for your budget, travel plans and lifestyle.
+                Explore motorhomes from popular brands such as Jayco, Avida, Sunliner, Winnebago, Avan, Trakka and KEA. From compact 2-berth motorhomes for couples to spacious family models, luxury tourers and 4WD motorhomes, compare layouts featuring island beds, twin beds, rear lounges, bunk beds and ensuites.
               </p>
-              
+              <p className="hbg-body">
+                Use our search filters to find motorhomes by location, price, condition, make, sleeping capacity and length. Compare key specifications including year, kilometres travelled, fuel type, transmission, GVM and payload capacity, along with features such as solar panels, air conditioning and kitchen facilities.
+              </p>
+              <p className="hbg-body">
+                When buying a used motorhome, check its service history, mechanical condition, registration and signs of water damage. Whether you&apos;re planning weekend getaways or travelling around Australia, browse our{" "}
+                <a href="/listings/" className="hbg-sell-link">motorhomes for sale</a>, compare available listings and contact dealers or private sellers directly.
+              </p>
+
             </div>
 
           </div>
@@ -63,6 +79,8 @@ export default function HomeBuyerGuide() {
           </p>
         </div>
       </section>
+
+      <HomeFaq />
 
       {/* ── Sell CTA Card ── */}
       <section className="hbg-sell-section">
