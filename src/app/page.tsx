@@ -10,6 +10,7 @@ import { fetchHomeFeatured } from "@/api/homeApi/featured/api";
 import { fetchBlogs } from "@/api/blog/api";
 import { fetchLinkableHrefs } from "@/app/listings/fetchBrowseSectionData";
 import HomeLocationSection from "./home-demo/HomeLocationSection";
+import { buildHomeFaqNode } from "./home-demo/homeFaqData";
 
 const SEED_MAX = 15;
 
@@ -67,14 +68,6 @@ const homeJsonLd = {
       "name": "Motorhomes For Sale",
       "description": "Australia's Marketplace for New & Used Motorhomes",
       "inLanguage": "en-AU",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": {
-          "@type": "EntryPoint",
-          "urlTemplate": `${BASE_URL}/listings/{search_term_string}-search/`,
-        },
-        "query-input": "required name=search_term_string",
-      },
     },
     {
       "@type": "Organization",
@@ -92,6 +85,10 @@ const homeJsonLd = {
         "availableLanguage": "English",
       },
     },
+    // Home page's FAQ section (HomeBuyerGuide/HomeFaq) — kept in this same
+    // @graph instead of a second <script> so the home page ships one JSON-LD
+    // block, not two.
+    buildHomeFaqNode(BASE_URL),
   ],
 };
 

@@ -482,14 +482,17 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, "");
 }
 
-/** FAQPage JSON-LD for the home page's FAQ section — flattens every
+/** The FAQPage node for the home page's FAQ section — flattens every
  * category's questions into one mainEntity list, with the HTML-formatted
- * answers (inline <a> tags) reduced to the plain text schema.org expects. */
-export function buildHomeFaqJsonLd() {
+ * answers (inline <a> tags) reduced to the plain text schema.org expects.
+ * Returned WITHOUT its own "@context" so the caller can splice it into the
+ * home page's single shared @graph (alongside WebSite/Organization) instead
+ * of rendering a second, separate <script type="application/ld+json">. */
+export function buildHomeFaqNode(baseUrl: string) {
   const allItems = Object.values(HOME_FAQ).flat();
   return {
-    "@context": "https://schema.org",
     "@type": "FAQPage",
+    "@id": `${baseUrl}/#faq`,
     mainEntity: allItems.map((item) => ({
       "@type": "Question",
       name: item.question,

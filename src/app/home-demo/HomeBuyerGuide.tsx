@@ -1,17 +1,12 @@
 import Image from "next/image";
 import HomeFaq from "./HomeFaq";
-import { buildHomeFaqJsonLd } from "./homeFaqData";
 
+// The FAQPage schema for this section's data lives in the home page's own
+// single JSON-LD <script> (src/app/page.tsx's homeJsonLd @graph), not here —
+// see homeFaqData.ts's buildHomeFaqNode.
 export default function HomeBuyerGuide() {
-  const faqJsonLd = buildHomeFaqJsonLd();
-
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
-
       {/* ── Buyer Guide ── */}
       <section className="hbg-section">
         <div className="container">
