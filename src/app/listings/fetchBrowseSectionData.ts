@@ -146,13 +146,19 @@ export async function fetchBrowseSectionData(
 
   if (stateRegionMode) {
     const scope = { state: state!, region: region! };
-    const [makeCounts, categoryCounts, priceCounts, gvmCounts, sleepCounts] = await Promise.all([
-      fetchGroupCountsServer("make", scope),
+    // fetchGroupCountsServer's params_count (underscore) endpoint 404s on the
+    // live backend (confirmed live — this is what left "Browse Motorhomes by
+    // Popular Manufacturers in {region}" empty on every state+region page).
+    // Use the same working params-count (hyphen) endpoint as makeOnly above.
+    const makeCountsQuery = fetchParamsCountServer(`group_by=make&state=${encodeURIComponent(state!)}&region=${encodeURIComponent(region!)}`);
+    const [makeCountsJson, categoryCounts, priceCounts, gvmCounts, sleepCounts] = await Promise.all([
+      makeCountsQuery,
       fetchGroupCountsServer("category", scope),
       Promise.all(PRICE_BANDS.map((b) => fetchBandCountServer(scope, b.query))),
       Promise.all(GVM_BANDS.map((b) => fetchBandCountServer(scope, b.query))),
       Promise.all(SLEEP_BANDS.map((b) => fetchBandCountServer(scope, b.query))),
     ]);
+    const makeCounts: CountItem[] = Array.isArray(makeCountsJson?.data) ? makeCountsJson.data : [];
     return { makeCounts, categoryCounts, priceCounts, gvmCounts, sleepCounts };
   }
 
