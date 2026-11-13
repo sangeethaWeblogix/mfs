@@ -49,8 +49,8 @@ export default function HomeBuyerGuide() {
                 Use our search filters to find motorhomes by location, price, condition, make, sleeping capacity and length. Compare key specifications including year, kilometres travelled, fuel type, transmission, GVM and payload capacity, along with features such as solar panels, air conditioning and kitchen facilities.
               </p>
               <p className="hbg-body">
-                When buying a used motorhome, check its service history, mechanical condition, registration and signs of water damage. Whether you&apos;re planning weekend getaways or travelling around Australia, browse our{" "}
-                <a href="/listings/" className="hbg-sell-link">motorhomes for sale</a>, compare available listings and contact dealers or private sellers directly.
+                When buying a used motorhome, check its service history, mechanical condition, registration and signs of water damage. Whether you&apos;re planning weekend getaways or travelling around Australia,{" "}
+                <a href="/listings/" className="hbg-sell-link">browse our motorhome listings</a>, compare available listings and contact dealers or private sellers directly.
               </p>
 
             </div>
