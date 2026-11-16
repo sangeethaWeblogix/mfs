@@ -727,9 +727,9 @@ export default function BlogDetailsPage({
             from dealers and private sellers across Australia, with listings available by make, model, price, location and motorhome type.
           </p>
           <p className="bds-cta-body">
-            <strong>Looking to sell?</strong> If you&apos;re upgrading to a newer motorhome or no longer need your current one,{" "}
-            <a href="/sell-my-motorhome/" className="bds-cta-link">sell your motorhome</a>{" "}
-            by creating a listing on MotorhomesForSale.com.au. Your advertisement stays online until it&apos;s sold for a one-time fee of $49.
+            <strong>Looking to sell?</strong> Visit{" "}
+            <a href="/sell-my-motorhome/" className="bds-cta-link">Sell My Motorhome</a>{" "}
+            to advertise your motorhome for just $49 incl. GST. Your listing stays live until sold, helping you connect with potential motorhome buyers across Australia.
           </p>
         </div>
       </section>

@@ -24,6 +24,7 @@ export interface FaqItem {
 }
 
 const L = {
+  home: "/",
   listings: "/listings/",
   newCondition: "/listings/new-condition/",
   usedCondition: "/listings/used-condition/",
@@ -67,7 +68,7 @@ export const HOME_FAQ: Record<FaqCategoryKey, FaqItem[]> = {
     },
     {
       question: "What are the different types of motorhomes?",
-      answer: `Motorhomes include compact van-based models, cab-over motorhomes, coachbuilt vehicles, luxury motorhomes and 4WD models. Compare different sizes and layouts on ${a(L.listings, "MotorhomesForSale.com.au")}.`,
+      answer: `Motorhomes include compact van-based models, cab-over motorhomes, coachbuilt vehicles, luxury motorhomes and 4WD models. Compare different sizes and layouts on ${a(L.home, "MotorhomesForSale.com.au")}.`,
     },
     {
       question: "What is the difference between a motorhome and a campervan?",
@@ -99,7 +100,7 @@ export const HOME_FAQ: Record<FaqCategoryKey, FaqItem[]> = {
     },
     {
       question: "Where can I find motorhomes for sale in Australia?",
-      answer: `Browse new and used motorhomes for sale in Australia on MotorhomesForSale.com.au. Compare listings from dealerships and private sellers across Australia.`,
+      answer: `${a(L.listings, "Browse new and used motorhomes for sale")} in Australia on MotorhomesForSale.com.au. Compare listings from dealerships and private sellers across Australia.`,
     },
     {
       question: "What are the different classes of motorhomes?",
