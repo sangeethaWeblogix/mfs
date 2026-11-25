@@ -224,6 +224,37 @@
     margin: 0;
     font-size: 14px;
 }
+.ftr-bottom__right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.ftr-bottom__social {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ftr-bottom__social-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 16px;
+  transition: opacity 0.15s;
+}
+.ftr-bottom__social-icon:hover {
+  opacity: 0.85;
+}
+.ftr-bottom__social-icon--fb {
+  background: #1877f2;
+}
+.ftr-bottom__social-icon--ig {
+  background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285aeb 90%);
+}
 
 /* ── Responsive ── */
 @media (max-width: 1100px) {
